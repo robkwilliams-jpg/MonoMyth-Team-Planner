@@ -8,7 +8,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
 main{max-width:1100px;margin:auto;padding:16px}h1{margin:0 0 4px;font-size:22px}h2{font-size:16px;margin:20px 0 8px}
 .mu{color:var(--mu);font-size:12px}
-.team{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.team{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
 .slot{background:var(--card);border:1px dashed var(--bd);border-radius:10px;padding:8px;min-height:110px;text-align:center;position:relative}
 .slot.f{border-style:solid}.slot button{position:absolute;top:4px;right:4px;border:0;background:none;color:var(--mu);cursor:pointer;font-size:16px}
 .spr{width:64px;height:64px;image-rendering:pixelated;object-fit:contain}
@@ -30,15 +30,15 @@ input,select{padding:7px 10px;border:1px solid var(--bd);border-radius:6px;backg
 td.ab{outline:2px dashed #3b82f6;outline-offset:-2px}
 </style></head><body><main>
 <h1>Monomyth Team Planner</h1>
-<div class="mu">Plan a team of 6 from the 361 Pokémon in the Monomyth Emerald hack. Abilities only affect the defense table (common type-immunity and resist abilities); movepools are not factored in. Data: <a href="https://dexdb.io/monomyth/" style="color:inherit">DexDB</a>.</div>
+<div class="mu">Plan a team of 6 from the 361 Pokémon in the Monomyth Emerald hack. Abilities only affect the defense table (common type-immunity and resist abilities). Pick up to 4 moves per Pokémon and the offense section uses the types of their damaging moves. Data: <a href="https://dexdb.io/monomyth/" style="color:inherit">DexDB</a>.</div>
 <h2>Your team</h2><div class="team" id="team"></div>
 <h2>Defense <label class="mu" style="font-weight:400"><input type="checkbox" id="fx" checked> apply ability effects (dashed = changed by ability)</label></h2><div class="scroll"><table id="def"></table></div>
-<h2>Offense (STAB type coverage)</h2><div id="cov"></div>
+<h2>Offense (type coverage from selected moves)</h2><div id="cov"></div>
 <h2>Pick a Pokémon</h2>
 <div class="bar"><input id="q" placeholder="Search name…"><select id="sort"><option value="n">No.</option><option value="a">Name</option><option value="b">BST</option></select><button id="clr" style="padding:7px 10px">Clear team</button></div>
 <div class="bar" id="chips"></div><div class="mu" id="cnt"></div>
 <div class="grid" id="grid"></div>
-<p class="mu">Sprites load from dexdb.io. Ability lists come from monomythwiki.com (game v1.0) and may differ from later versions. Monomyth is a fan game by Team Monomyth; this is an unofficial fan tool. Spoilers: the Pokédex reveals the hack's new Pokémon.</p>
+<p class="mu">Sprites load from dexdb.io. Move lists (level-up, TM/HM and tutor; no egg moves) were taken from DexDB, with alternate forms folded into the base Pokémon. Ability lists come from monomythwiki.com (game v1.0) and may differ from later versions. Monomyth is a fan game by Team Monomyth; this is an unofficial fan tool. Spoilers: the Pokédex reveals the hack's new Pokémon.</p>
 </main>
 <script>
 const RAW=`Marmroot Gr 320
@@ -410,8 +410,9 @@ const P=RAW.split('\n').map((l,i)=>{const m=l.match(/^(.*) (\w+) (\d+)$/);return
  slug:m[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss').replace(/’/g,'').replace(/&/g,'-').replace(/ /g,'-').toLowerCase()}});
 function mult(a,d){const[s,v,z]=CH[a].split('/').map(x=>x?x.match(/../g):[]);let r=1;for(const t of d){if(z.includes(t))r=0;else if(s.includes(t))r*=2;else if(v.includes(t))r*=.5}return r}
 const $=id=>document.getElementById(id);
-let team=[null,null,null,null,null,null],filt=new Set(),abil={};
+let team=[null,null,null,null,null,null],filt=new Set(),abil={},mv={};
 try{abil=JSON.parse(localStorage.getItem('mmab')||'{}')||{}}catch(e){}
+try{mv=JSON.parse(localStorage.getItem('mmmv')||'{}')||{}}catch(e){}
 const ABL=`Adaptability,Aftermath,Air Lock,Alchemist,Analytic,Anger Point,Anticipation,Arena Trap,Aroma Veil,Backshift,Bad Dreams,Battle Armor,Berserk,Big Pecks,Bladed,Blaze,Bulletproof,Cheek Pouch,Chlorophyll,Clear Body,Cloud Nine,Color Change,Compaction,Competitive,Compound Eyes,Corrosion,Cursed Body,Cute Charm,Damp,Dazzling,Defeatist,Defiant,Desert Curse,Download,Drizzle,Drought,Dry Skin,Early Bird,Effect Spore,Electric Surge,Filter,Flame Body,Flare Boost,Flash Fire,Flower Veil,Fluffy,Forewarn,Forgery,Friend Guard,Frisk,Fur Coat,Galvanize,Gluttony,Gooey,Grass Pelt,Grassy Surge,Guts,Harvest,Healer,Heatproof,Heavy Metal,Honey Gather,Hue Shift,Hustle,Hydration,Hyper Cutter,Ice Body,Igloo,Illuminate,Illusion,Immunity,Imposter,Infiltrator,Innards Out,Inner Focus,Insomnia,Intimidate,Iron Barbs,Iron Fist,Justified,Keen Eye,Klutz,Leaf Guard,Levitate,Light Metal,Lightning Rod,Limber,Liquid Ooze,Liquid Voice,Long Reach,Magic Bounce,Magic Guard,Magician,Magma Armor,Magnet Pull,Marvel Scale,Merciless,Misty Surge,Mold Breaker,Moody,Motor Drive,Moxie,Multicell,Multiscale,Natural Cure,Neuroforce,No Guard,Normalize,Oblivious,Overcoat,Overgrow,Own Tempo,Panacea,Parental Bond,Pickpocket,Pickup,Plated,Poison Heal,Poison Point,Poison Touch,Prankster,Pressure,Protean,Psychic Surge,Pure Power,Quick Feet,Rain Dish,Rattled,Recomposite,Refrigerate,Regenerator,Rivalry,Rock Head,Rough Skin,Run Away,Sand Force,Sand Rush,Sand Stream,Sand Veil,Sap Sipper,Scrappy,Serene Grace,Shadow Shield,Shadow Tag,Shed Skin,Sheer Force,Shell Armor,Shield Dust,Simple,Skill Link,Slush Rush,Sniper,Snow Cloak,Snow Warning,Solar Power,Solid Rock,Soundproof,Speed Boost,Stakeout,Stamina,Static,Steadfast,Steelworker,Stench,Sticky Hold,Storm Drain,Strong Jaw,Sturdy,Super Luck,Surge Surfer,Swarm,Sweet Veil,Swift Swim,Symbiosis,Synchronize,Tangled Feet,Tangling Hair,Technician,Telepathy,Terraincast,Thick Fat,Tinted Lens,Torrent,Tough Claws,Toxic Boost,Triage,Unaware,Unburden,Unnerve,Victory Star,Viral,Vital Spirit,Volt Absorb,Water Absorb,Water Bubble,Water Veil,Weak Armor,White Smoke,Wonder Skin,Zen Mode`.split(',');
 // Ability -> Pokémon that can have it (primary, secondary or hidden). Source: monomythwiki.com (game v1.0); form variants are folded into the base Pokémon.
 const AD=`Harvest=Exeggcute,Exeggutor,Tomtop,Upbrute
@@ -620,21 +621,1057 @@ const IMM={Levitate:['Gd'],'Flash Fire':['Fi'],'Water Absorb':['Wa'],'Storm Drai
 const HALF={'Thick Fat':['Fi','Ic'],Heatproof:['Fi'],'Water Bubble':['Fi']};
 function memMult(a,p){let r=mult(a,p.ty);const ab=abil[p.n];if(!ab||!$('fx').checked||!(AB[p.n]||[]).includes(ab))return r;
  if((IMM[ab]||[]).includes(a))return 0;if((HALF[ab]||[]).includes(a))r*=.5;return r}
+// Moves: window.MOVEDATA comes from monomyth-moves.js (built by fetch-monomyth-moves.mjs)
+// Move data crawled from DexDB: level-up, TM/HM and tutor moves (egg moves excluded). MVT: key|name|type|p(hys) or s(pec/status)|power. LSD: line n = Pokémon n, base-36 indices into MVT.
+const MVT=`absorb|Absorb|grass|s|20
+accelerock|Accelerock|rock|p|40
+acid|Acid|poison|s|40
+acid armor|Acid Armor|poison|s|0
+acid spray|Acid Spray|poison|s|40
+acrobatics|Acrobatics|flying|p|55
+acupressure|Acupressure|normal|s|0
+aerial ace|Aerial Ace|flying|p|60
+after you|After You|normal|s|0
+agility|Agility|psychic|s|0
+air cutter|Air Cutter|flying|s|60
+air slash|Air Slash|flying|s|75
+amnesia|Amnesia|psychic|s|0
+ancient power|Ancient Power|rock|s|60
+aqua jet|Aqua Jet|water|p|40
+aqua ring|Aqua Ring|water|s|0
+aqua tail|Aqua Tail|water|p|90
+arm thrust|Arm Thrust|fighting|p|15
+aromatherapy|Aromatherapy|grass|s|0
+aromatic mist|Aromatic Mist|fairy|s|0
+assist|Assist|normal|s|0
+assurance|Assurance|dark|p|60
+astonish|Astonish|ghost|p|30
+attack order|Attack Order|bug|p|90
+attract|Attract|normal|s|0
+aura sphere|Aura Sphere|fighting|s|80
+aurora beam|Aurora Beam|ice|s|65
+aurora veil|Aurora Veil|ice|s|0
+autotomize|Autotomize|steel|s|0
+avalanche|Avalanche|ice|p|60
+baby-doll eyes|Baby-Doll Eyes|fairy|s|0
+baneful bunker|Baneful Bunker|poison|s|0
+barrage|Barrage|normal|p|15
+barrier|Barrier|psychic|s|0
+baton pass|Baton Pass|normal|s|0
+beat up|Beat Up|dark|p|0
+belch|Belch|poison|s|120
+belly drum|Belly Drum|normal|s|0
+bestow|Bestow|normal|s|0
+bibbidi bop|Bibbidi Bop|fairy|p|18
+bide|Bide|normal|p|0
+big bang horn|Big Bang Horn|bug|p|150
+bind|Bind|normal|p|15
+bite|Bite|dark|p|60
+blaze kick|Blaze Kick|fire|p|85
+blindside|Blindside|flying|p|65
+blizzard|Blizzard|ice|s|110
+block|Block|normal|s|0
+body slam|Body Slam|normal|p|85
+bolt chain|Bolt Chain|electric|p|30
+bolt strike|Bolt Strike|electric|p|130
+bone club|Bone Club|ground|p|65
+bone rush|Bone Rush|ground|p|25
+bonemerang|Bonemerang|ground|p|50
+boomburst|Boomburst|normal|s|125
+bounce|Bounce|flying|p|85
+brain freeze|Brain Freeze|ice|s|70
+brave bird|Brave Bird|flying|p|120
+breaking swipe|Breaking Swipe|dragon|p|60
+brick break|Brick Break|fighting|p|75
+brine|Brine|water|s|65
+brutal swing|Brutal Swing|dark|p|60
+bubble|Bubble|water|s|40
+bubble beam|Bubble Beam|water|s|65
+bug bite|Bug Bite|bug|p|60
+bug buzz|Bug Buzz|bug|s|90
+bulk up|Bulk Up|fighting|s|0
+bulldoze|Bulldoze|ground|p|60
+bullet punch|Bullet Punch|steel|p|40
+bullet seed|Bullet Seed|grass|p|25
+burn up|Burn Up|fire|s|130
+calm mind|Calm Mind|psychic|s|0
+camouflage|Camouflage|normal|s|0
+captivate|Captivate|normal|s|0
+chakra points|Chakra Points|psychic|p|60
+charge|Charge|electric|s|0
+charge beam|Charge Beam|electric|s|50
+charm|Charm|fairy|s|0
+chatter|Chatter|flying|s|60
+chip away|Chip Away|normal|p|70
+circle throw|Circle Throw|fighting|p|60
+clamp|Clamp|water|p|35
+clanging scales|Clanging Scales|dragon|s|110
+clear smog|Clear Smog|poison|s|50
+close combat|Close Combat|fighting|p|120
+cloudburst|Cloudburst|flying|s|100
+coil|Coil|poison|s|0
+coin hurl|Coin Hurl|normal|p|0
+cold nebula|Cold Nebula|fairy|s|0
+comet punch|Comet Punch|normal|p|18
+confide|Confide|normal|s|0
+confuse ray|Confuse Ray|ghost|s|0
+confusion|Confusion|psychic|s|50
+constrict|Constrict|normal|p|40
+conversion|Conversion|normal|s|0
+conversion 2|Conversion 2|normal|s|0
+copper slash|Copper Slash|steel|p|70
+copycat|Copycat|normal|s|0
+cosmic power|Cosmic Power|psychic|s|0
+cotton guard|Cotton Guard|grass|s|0
+cotton spore|Cotton Spore|grass|s|0
+countdown|Countdown|fire|s|0
+counter|Counter|fighting|p|0
+covet|Covet|normal|p|60
+crabhammer|Crabhammer|water|p|100
+cracklstrike|CracklStrike|electric|p|60
+crafty shield|Crafty Shield|fairy|s|0
+cragalanche|Cragalanche|rock|p|60
+crisis claw|Crisis Claw|dark|p|70
+cross chop|Cross Chop|fighting|p|100
+cross poison|Cross Poison|poison|p|70
+crunch|Crunch|dark|p|80
+crush claw|Crush Claw|normal|p|75
+cryo mouth|Cryo Mouth|ice|p|75
+curse|Curse|ghost|s|0
+cut|Cut|normal|p|65
+dark mind|Dark Mind|dark|s|0
+dark pulse|Dark Pulse|dark|s|80
+dazzling gleam|Dazzling Gleam|fairy|s|80
+defend order|Defend Order|bug|s|0
+defense curl|Defense Curl|normal|s|0
+defog|Defog|flying|s|0
+destiny bond|Destiny Bond|ghost|s|0
+detect|Detect|fighting|s|0
+diamond storm|Diamond Storm|rock|p|100
+dig|Dig|ground|p|80
+disable|Disable|normal|s|0
+disarming voice|Disarming Voice|fairy|s|40
+discharge|Discharge|electric|s|80
+dive|Dive|water|p|80
+dizzy punch|Dizzy Punch|normal|p|70
+do the wave|Do the Wave|normal|p|0
+doom desire|Doom Desire|steel|s|140
+dopey dosage|Dopey Dosage|poison|s|70
+double hit|Double Hit|normal|p|35
+double kick|Double Kick|fighting|p|30
+double slap|Double Slap|normal|p|15
+double team|Double Team|normal|s|0
+double-edge|Double-Edge|normal|p|120
+dragon breath|Dragon Breath|dragon|s|60
+dragon claw|Dragon Claw|dragon|p|80
+dragon dance|Dragon Dance|dragon|s|0
+dragon darts|Dragon Darts|dragon|p|50
+dragon hammer|Dragon Hammer|dragon|p|90
+dragon pulse|Dragon Pulse|dragon|s|85
+dragon rage|Dragon Rage|dragon|s|0
+dragon rush|Dragon Rush|dragon|p|100
+dragon tail|Dragon Tail|dragon|p|60
+drain punch|Drain Punch|fighting|p|75
+draining kiss|Draining Kiss|fairy|s|50
+dream eater|Dream Eater|psychic|s|100
+drill peck|Drill Peck|flying|p|80
+drill run|Drill Run|ground|p|80
+dual chop|Dual Chop|dragon|p|40
+dynamic punch|Dynamic Punch|fighting|p|100
+earth power|Earth Power|ground|s|90
+earthquake|Earthquake|ground|p|100
+echoed voice|Echoed Voice|normal|s|40
+eeeeeeek|Eeeeeeek|normal|s|0
+eerie impulse|Eerie Impulse|electric|s|0
+egg bomb|Egg Bomb|normal|p|100
+eggsplosion|Eggsplosion|normal|p|50
+electric terrain|Electric Terrain|electric|s|0
+electrify|Electrify|electric|s|0
+electro ball|Electro Ball|electric|s|0
+electroweb|Electroweb|electric|s|55
+embargo|Embargo|dark|s|0
+ember|Ember|fire|s|40
+encore|Encore|normal|s|0
+endeavor|Endeavor|normal|p|0
+endure|Endure|normal|s|0
+energy ball|Energy Ball|grass|s|90
+entrainment|Entrainment|normal|s|0
+eruption|Eruption|fire|s|150
+explosion|Explosion|normal|p|170
+extrasensory|Extrasensory|psychic|s|80
+extreme speed|Extreme Speed|normal|p|80
+facade|Facade|normal|p|70
+fairy lock|Fairy Lock|fairy|s|0
+fairy wind|Fairy Wind|fairy|s|40
+fake out|Fake Out|normal|p|40
+fake tears|Fake Tears|dark|s|0
+falchiondive|Falchiondive|flying|p|60
+false swipe|False Swipe|normal|p|40
+feather dance|Feather Dance|flying|s|0
+feint|Feint|normal|p|30
+feint attack|Feint Attack|dark|p|60
+fell stinger|Fell Stinger|bug|p|50
+fiery dance|Fiery Dance|fire|s|80
+final gambit|Final Gambit|fighting|s|0
+fire blast|Fire Blast|fire|s|110
+fire fang|Fire Fang|fire|p|65
+fire lash|Fire Lash|fire|p|80
+fire punch|Fire Punch|fire|p|75
+fire spin|Fire Spin|fire|s|35
+first impression|First Impression|bug|p|90
+fissure|Fissure|ground|p|0
+flail|Flail|normal|p|0
+flame burst|Flame Burst|fire|s|70
+flame charge|Flame Charge|fire|p|50
+flame wheel|Flame Wheel|fire|p|60
+flamethrower|Flamethrower|fire|s|90
+flare blitz|Flare Blitz|fire|p|120
+flash|Flash|normal|s|0
+flash cannon|Flash Cannon|steel|s|80
+flatter|Flatter|dark|s|0
+fling|Fling|dark|p|0
+floral healing|Floral Healing|fairy|s|0
+flower shield|Flower Shield|fairy|s|0
+fly|Fly|flying|p|80
+flying press|Flying Press|fighting|p|100
+focus blast|Focus Blast|fighting|s|120
+focus energy|Focus Energy|normal|s|0
+focus punch|Focus Punch|fighting|p|150
+follow me|Follow Me|normal|s|0
+forage fire|Forage Fire|fire|s|0
+force palm|Force Palm|fighting|p|60
+foresight|Foresight|normal|s|0
+foul play|Foul Play|dark|p|95
+freeze-dry|Freeze-Dry|ice|s|70
+frost breath|Frost Breath|ice|s|60
+frost buster|Frost Buster|ice|p|160
+fumethrower|Fumethrower|poison|s|90
+fury attack|Fury Attack|normal|p|15
+fury cutter|Fury Cutter|bug|p|40
+fury swipes|Fury Swipes|normal|p|18
+future sight|Future Sight|psychic|s|120
+gaia charge|Gaia Charge|grass|s|0
+gastro acid|Gastro Acid|poison|s|0
+gear grind|Gear Grind|steel|p|50
+giga drain|Giga Drain|grass|s|75
+giga impact|Giga Impact|normal|p|150
+glare|Glare|normal|s|0
+grand finale|Grand Finale|fire|s|150
+grass knot|Grass Knot|grass|s|0
+grass whistle|Grass Whistle|grass|s|0
+grassy terrain|Grassy Terrain|grass|s|0
+gravity|Gravity|psychic|s|0
+growl|Growl|normal|s|0
+growth|Growth|normal|s|0
+grudge|Grudge|ghost|s|0
+guard split|Guard Split|psychic|s|0
+guard swap|Guard Swap|psychic|s|0
+guillotine|Guillotine|normal|p|0
+gunk shot|Gunk Shot|poison|p|120
+gust|Gust|flying|s|40
+gyro ball|Gyro Ball|steel|p|0
+hail|Hail|ice|s|0
+halloween|Halloween|ghost|s|0
+hammer arm|Hammer Arm|fighting|p|100
+harden|Harden|normal|s|0
+haze|Haze|ice|s|0
+head smash|Head Smash|rock|p|150
+headbutt|Headbutt|normal|p|70
+heal bell|Heal Bell|normal|s|0
+heal block|Heal Block|psychic|s|0
+heal order|Heal Order|bug|s|0
+heal pulse|Heal Pulse|psychic|s|0
+healing wish|Healing Wish|psychic|s|0
+heart stamp|Heart Stamp|psychic|p|60
+heart swap|Heart Swap|psychic|s|0
+heat crash|Heat Crash|fire|p|0
+heat wave|Heat Wave|fire|s|95
+heavy nose|Heavy Nose|steel|p|120
+heavy slam|Heavy Slam|steel|p|0
+helping hand|Helping Hand|normal|s|0
+hex|Hex|ghost|s|65
+hidden power|Hidden Power|normal|s|60
+high horsepower|High Horsepower|ground|p|95
+high jump kick|High Jump Kick|fighting|p|130
+hone claws|Hone Claws|dark|s|0
+horn attack|Horn Attack|normal|p|65
+horn drill|Horn Drill|normal|p|0
+horn leech|Horn Leech|grass|p|75
+horrid pollen|Horrid Pollen|grass|s|0
+howl|Howl|normal|s|0
+hurricane|Hurricane|flying|s|110
+hydro pump|Hydro Pump|water|s|110
+hyper beam|Hyper Beam|normal|s|150
+hyper fang|Hyper Fang|normal|p|80
+hyper voice|Hyper Voice|normal|s|90
+hypnosis|Hypnosis|psychic|s|0
+ice ball|Ice Ball|ice|p|30
+ice beam|Ice Beam|ice|s|90
+ice fang|Ice Fang|ice|p|65
+ice hammer|Ice Hammer|ice|p|100
+ice punch|Ice Punch|ice|p|75
+ice shard|Ice Shard|ice|p|40
+icicle crash|Icicle Crash|ice|p|85
+icicle spear|Icicle Spear|ice|p|25
+icy wind|Icy Wind|ice|s|55
+imprison|Imprison|psychic|s|0
+incinerate|Incinerate|fire|s|60
+inferno|Inferno|fire|s|120
+infestation|Infestation|bug|s|20
+ingrain|Ingrain|grass|s|0
+instruct|Instruct|psychic|s|0
+ion deluge|Ion Deluge|electric|s|0
+iron defense|Iron Defense|steel|s|0
+iron head|Iron Head|steel|p|80
+iron tail|Iron Tail|steel|p|100
+jaw lock|Jaw Lock|dark|p|60
+jump kick|Jump Kick|fighting|p|100
+k-scissor|K-Scissor|bug|p|80
+karate chop|Karate Chop|fighting|p|50
+kinesis|Kinesis|psychic|s|0
+king's shield|King's Shield|steel|s|0
+knock off|Knock Off|dark|p|65
+laser focus|Laser Focus|normal|s|0
+last resort|Last Resort|normal|p|140
+lava plume|Lava Plume|fire|s|80
+leaf blade|Leaf Blade|grass|p|90
+leaf storm|Leaf Storm|grass|s|130
+leaf tornado|Leaf Tornado|grass|s|65
+leafage|Leafage|grass|p|40
+leech life|Leech Life|bug|p|80
+leech seed|Leech Seed|grass|s|0
+leer|Leer|normal|s|0
+lick|Lick|ghost|p|30
+life dew|Life Dew|water|s|0
+liftoff|Liftoff|normal|p|0
+light screen|Light Screen|psychic|s|0
+liquidation|Liquidation|water|p|85
+lock-on|Lock-On|normal|s|0
+lovely kiss|Lovely Kiss|normal|s|0
+low kick|Low Kick|fighting|p|0
+low sweep|Low Sweep|fighting|p|65
+lucky chant|Lucky Chant|normal|s|0
+lunar dance|Lunar Dance|psychic|s|0
+lunatic hero|Lunatic Hero|steel|p|130
+lunge|Lunge|bug|p|80
+lóng’s scar|Lóng’s Scar|dragon|p|70
+mach punch|Mach Punch|fighting|p|40
+magic coat|Magic Coat|psychic|s|0
+magic room|Magic Room|psychic|s|0
+magical leaf|Magical Leaf|grass|s|60
+magma storm|Magma Storm|fire|s|100
+magnet bomb|Magnet Bomb|steel|p|60
+magnet rise|Magnet Rise|electric|s|0
+magnitude|Magnitude|ground|p|0
+mat block|Mat Block|fighting|s|0
+me first|Me First|normal|s|0
+mean look|Mean Look|normal|s|0
+meditate|Meditate|psychic|s|0
+mega drain|Mega Drain|grass|s|40
+mega kick|Mega Kick|normal|p|120
+mega punch|Mega Punch|normal|p|80
+megahorn|Megahorn|bug|p|120
+memento|Memento|dark|s|0
+metaform|Metaform|steel|s|0
+metal burst|Metal Burst|steel|p|0
+metal claw|Metal Claw|steel|p|50
+metal sound|Metal Sound|steel|s|0
+meteor mash|Meteor Mash|steel|p|90
+metronome|Metronome|normal|s|0
+mimic|Mimic|normal|s|0
+mind reader|Mind Reader|normal|s|0
+minimize|Minimize|normal|s|0
+miracle eye|Miracle Eye|psychic|s|0
+mirror coat|Mirror Coat|psychic|s|0
+mirror move|Mirror Move|flying|s|0
+mirror shot|Mirror Shot|steel|s|65
+mist|Mist|ice|s|0
+misty terrain|Misty Terrain|fairy|s|0
+mithril beam|Mithril Beam|dragon|s|120
+moonblast|Moonblast|fairy|s|95
+moonlight|Moonlight|fairy|s|0
+morning sun|Morning Sun|normal|s|0
+mud bomb|Mud Bomb|ground|s|65
+mud shot|Mud Shot|ground|s|55
+mud sport|Mud Sport|ground|s|0
+mud-slap|Mud-Slap|ground|s|20
+muddy water|Muddy Water|water|s|90
+mystical fire|Mystical Fire|fire|s|75
+nasty plot|Nasty Plot|dark|s|0
+natural gift|Natural Gift|normal|p|0
+nature power|Nature Power|normal|s|0
+needle arm|Needle Arm|grass|p|60
+night daze|Night Daze|dark|s|85
+night shade|Night Shade|ghost|s|0
+night slash|Night Slash|dark|p|70
+nightmare|Nightmare|ghost|s|0
+noble roar|Noble Roar|normal|s|0
+north wind|North Wind|ice|s|60
+nuzzle|Nuzzle|electric|p|20
+obelisk ray|Obelisk Ray|psychic|s|150
+octazooka|Octazooka|water|s|65
+odor sleuth|Odor Sleuth|normal|s|0
+ominous wind|Ominous Wind|ghost|s|60
+outrage|Outrage|dragon|p|120
+overheat|Overheat|fire|s|130
+pain split|Pain Split|normal|s|0
+parabolic charge|Parabolic Charge|electric|s|65
+parting shot|Parting Shot|dark|s|0
+pay day|Pay Day|normal|p|40
+payback|Payback|dark|p|50
+peck|Peck|flying|p|35
+perish song|Perish Song|normal|s|0
+petal blizzard|Petal Blizzard|grass|p|90
+petal dance|Petal Dance|grass|s|120
+phantom force|Phantom Force|ghost|p|90
+phat sound|Phat Sound|normal|s|80
+phototoxin|Phototoxin|grass|s|0
+pin missile|Pin Missile|bug|p|25
+play nice|Play Nice|normal|s|0
+play rough|Play Rough|fairy|p|90
+pluck|Pluck|flying|p|60
+poison fang|Poison Fang|poison|p|50
+poison gas|Poison Gas|poison|s|0
+poison jab|Poison Jab|poison|p|80
+poison powder|Poison Powder|poison|s|0
+poison sting|Poison Sting|poison|p|15
+poison tail|Poison Tail|poison|p|50
+pollen puff|Pollen Puff|bug|s|90
+poltergeist|Poltergeist|ghost|p|110
+pot smash|Pot Smash|flying|p|80
+pound|Pound|normal|p|40
+powder|Powder|bug|s|0
+powder snow|Powder Snow|ice|s|40
+power gem|Power Gem|rock|s|80
+power split|Power Split|psychic|s|0
+power swap|Power Swap|psychic|s|0
+power trick|Power Trick|psychic|s|0
+power trip|Power Trip|dark|p|20
+power whip|Power Whip|grass|p|120
+power-up punch|Power-Up Punch|fighting|p|40
+present|Present|normal|p|0
+protect|Protect|normal|s|0
+psybeam|Psybeam|psychic|s|65
+psych up|Psych Up|normal|s|0
+psychic|Psychic|psychic|s|90
+psychic fangs|Psychic Fangs|psychic|p|75
+psychic terrain|Psychic Terrain|psychic|s|0
+psycho boost|Psycho Boost|psychic|s|140
+psycho cut|Psycho Cut|psychic|p|70
+psycho shift|Psycho Shift|psychic|s|0
+psyshock|Psyshock|psychic|s|80
+psywave|Psywave|psychic|s|0
+punishment|Punishment|dark|p|60
+purify|Purify|poison|s|0
+pursuit|Pursuit|dark|p|40
+quash|Quash|dark|s|0
+quick attack|Quick Attack|normal|p|40
+quick guard|Quick Guard|fighting|s|0
+quiver dance|Quiver Dance|bug|s|0
+rage|Rage|normal|p|20
+rage fist|Rage Fist|ghost|p|50
+rage powder|Rage Powder|bug|s|0
+rain dance|Rain Dance|water|s|0
+rapid spin|Rapid Spin|normal|p|50
+razor leaf|Razor Leaf|grass|p|55
+razor shell|Razor Shell|water|p|75
+razor wind|Razor Wind|normal|s|80
+recover|Recover|normal|s|0
+recycle|Recycle|normal|s|0
+reflect|Reflect|psychic|s|0
+reflect type|Reflect Type|normal|s|0
+refresh|Refresh|normal|s|0
+rest|Rest|psychic|s|0
+retaliate|Retaliate|normal|p|70
+return|Return|normal|p|0
+revenge|Revenge|fighting|p|60
+reversal|Reversal|fighting|p|0
+roar|Roar|normal|s|0
+rock blast|Rock Blast|rock|p|25
+rock climb|Rock Climb|normal|p|90
+rock polish|Rock Polish|rock|s|0
+rock slide|Rock Slide|rock|p|75
+rock smash|Rock Smash|fighting|p|50
+rock throw|Rock Throw|rock|p|50
+rock tomb|Rock Tomb|rock|p|60
+rock wrecker|Rock Wrecker|rock|p|150
+role play|Role Play|psychic|s|0
+rolling kick|Rolling Kick|fighting|p|60
+rollout|Rollout|rock|p|30
+roost|Roost|flying|s|0
+rototiller|Rototiller|ground|s|0
+round|Round|normal|s|60
+sacred sword|Sacred Sword|fighting|p|90
+safeguard|Safeguard|normal|s|0
+sand attack|Sand Attack|ground|s|0
+sand tomb|Sand Tomb|ground|p|35
+sandstorm|Sandstorm|rock|s|0
+scald|Scald|water|s|80
+scary face|Scary Face|normal|s|0
+scratch|Scratch|normal|p|40
+screech|Screech|normal|s|0
+searing shot|Searing Shot|fire|s|100
+secret power|Secret Power|normal|p|70
+seed bomb|Seed Bomb|grass|p|80
+seismic toss|Seismic Toss|fighting|p|0
+self-destruct|Self-Destruct|normal|p|130
+shadow ball|Shadow Ball|ghost|s|80
+shadow bone|Shadow Bone|ghost|p|85
+shadow claw|Shadow Claw|ghost|p|70
+shadow punch|Shadow Punch|ghost|p|60
+shadow sneak|Shadow Sneak|ghost|p|40
+sharpen|Sharpen|normal|s|0
+sheer cold|Sheer Cold|ice|s|0
+shell smash|Shell Smash|normal|s|0
+shift gear|Shift Gear|steel|s|0
+shock wave|Shock Wave|electric|s|60
+shore up|Shore Up|ground|s|0
+signal beam|Signal Beam|bug|s|75
+silver wind|Silver Wind|bug|s|60
+simple beam|Simple Beam|normal|s|0
+sing|Sing|normal|s|0
+sketch|Sketch|normal|s|0
+skill swap|Skill Swap|psychic|s|0
+skull bash|Skull Bash|normal|p|130
+sky attack|Sky Attack|flying|p|140
+sky uppercut|Sky Uppercut|fighting|p|85
+slack off|Slack Off|normal|s|0
+slam|Slam|normal|p|80
+slash|Slash|normal|p|70
+sleep powder|Sleep Powder|grass|s|0
+sleep talk|Sleep Talk|normal|s|0
+sludge|Sludge|poison|s|65
+sludge bomb|Sludge Bomb|poison|s|90
+sludge wave|Sludge Wave|poison|s|95
+smack down|Smack Down|rock|p|50
+smart strike|Smart Strike|steel|p|70
+smelling salts|Smelling Salts|normal|p|70
+smog|Smog|poison|s|30
+smokescreen|Smokescreen|normal|s|0
+snap trap|Snap Trap|grass|p|35
+snarl|Snarl|dark|s|55
+snatch|Snatch|dark|s|0
+snipe gun|Snipe Gun|normal|s|80
+snore|Snore|normal|s|50
+soak|Soak|water|s|0
+sod shadow|Sod Shadow|grass|p|100
+soft-boiled|Soft-Boiled|normal|s|0
+solar beam|Solar Beam|grass|s|120
+solar blade|Solar Blade|grass|p|125
+sonic boom|Sonic Boom|normal|s|0
+soul rend|Soul Rend|ghost|p|75
+spark|Spark|electric|p|65
+speed swap|Speed Swap|psychic|s|0
+spider web|Spider Web|bug|s|0
+spike cannon|Spike Cannon|normal|p|20
+spikes|Spikes|ground|s|0
+spiky shield|Spiky Shield|grass|s|0
+spit up|Spit Up|normal|s|0
+spite|Spite|ghost|s|0
+splash|Splash|normal|s|0
+spore|Spore|grass|s|0
+spotlight|Spotlight|normal|s|0
+star assault|Star Assault|fighting|p|150
+star burst|Star Burst|psychic|s|140
+stealth rock|Stealth Rock|rock|s|0
+steam eruption|Steam Eruption|water|s|110
+steamroller|Steamroller|bug|p|65
+steel wing|Steel Wing|steel|p|70
+sticky web|Sticky Web|bug|s|0
+stink bomb|Stink Bomb|poison|s|65
+stockpile|Stockpile|normal|s|0
+stomp|Stomp|normal|p|65
+stomping tantrum|Stomping Tantrum|ground|p|75
+stone edge|Stone Edge|rock|p|100
+stored power|Stored Power|psychic|s|20
+storm throw|Storm Throw|fighting|p|60
+strength|Strength|normal|p|80
+strength sap|Strength Sap|grass|s|0
+string shot|String Shot|bug|s|0
+struggle bug|Struggle Bug|bug|s|50
+stun spore|Stun Spore|grass|s|0
+submission|Submission|fighting|p|80
+substitute|Substitute|normal|s|0
+sucker punch|Sucker Punch|dark|p|70
+sunny day|Sunny Day|fire|s|0
+super fang|Super Fang|normal|p|0
+super singe|Super Singe|fire|s|65
+superpower|Superpower|fighting|p|120
+supersonic|Supersonic|normal|s|0
+surf|Surf|water|s|70
+swagger|Swagger|normal|s|0
+swallow|Swallow|normal|s|0
+sweet kiss|Sweet Kiss|fairy|s|0
+sweet scent|Sweet Scent|normal|s|0
+swift|Swift|normal|s|60
+switcheroo|Switcheroo|dark|s|0
+swords dance|Swords Dance|normal|s|0
+synchronoise|Synchronoise|psychic|s|120
+synthesis|Synthesis|grass|s|0
+tackle|Tackle|normal|p|40
+tail glow|Tail Glow|bug|s|0
+tail slap|Tail Slap|normal|p|25
+tail whip|Tail Whip|normal|s|0
+tailwind|Tailwind|flying|s|0
+take down|Take Down|normal|p|90
+tar shot|Tar Shot|rock|s|0
+taunt|Taunt|dark|s|0
+tearful look|Tearful Look|normal|s|0
+teeter dance|Teeter Dance|normal|s|0
+telekinesis|Telekinesis|psychic|s|0
+teleport|Teleport|psychic|s|0
+terrain pulse|Terrain Pulse|normal|s|50
+thief|Thief|dark|p|60
+thrash|Thrash|normal|p|120
+throat chop|Throat Chop|dark|p|80
+thunder|Thunder|electric|s|110
+thunder bump|Thunder Bump|electric|p|60
+thunder fang|Thunder Fang|electric|p|65
+thunder punch|Thunder Punch|electric|p|75
+thunder shock|Thunder Shock|electric|s|40
+thunder wave|Thunder Wave|electric|s|0
+thunderbolt|Thunderbolt|electric|s|90
+tickle|Tickle|normal|s|0
+topsy-turvy|Topsy-Turvy|dark|s|0
+torment|Torment|dark|s|0
+toxic|Toxic|poison|s|0
+toxic spikes|Toxic Spikes|poison|s|0
+toxic thread|Toxic Thread|poison|s|0
+transform|Transform|normal|s|0
+tri attack|Tri Attack|normal|s|80
+trick|Trick|psychic|s|0
+trick room|Trick Room|psychic|s|0
+triple kick|Triple Kick|fighting|p|15
+trump card|Trump Card|normal|s|0
+twineedle|Twineedle|bug|p|25
+twister|Twister|dragon|s|40
+u-turn|U-turn|bug|p|70
+uproar|Uproar|normal|s|90
+vacuum bolt|Vacuum Bolt|electric|s|40
+vacuum wave|Vacuum Wave|fighting|s|40
+venom drench|Venom Drench|poison|s|0
+venoshock|Venoshock|poison|s|65
+vine whip|Vine Whip|grass|p|45
+vise grip|Vise Grip|normal|p|55
+vital throw|Vital Throw|fighting|p|70
+volt switch|Volt Switch|electric|s|70
+volt tackle|Volt Tackle|electric|p|120
+wake-up slap|Wake-Up Slap|fighting|p|70
+warp strike|Warp Strike|psychic|s|80
+water gun|Water Gun|water|s|40
+water pulse|Water Pulse|water|s|60
+water shuriken|Water Shuriken|water|s|15
+water sport|Water Sport|water|s|0
+water spout|Water Spout|water|s|150
+watercolor|Watercolor|water|s|70
+waterfall|Waterfall|water|p|70
+weather ball|Weather Ball|normal|s|50
+whirlpool|Whirlpool|water|s|35
+whirlwind|Whirlwind|normal|s|0
+wide guard|Wide Guard|rock|s|0
+wild charge|Wild Charge|electric|p|90
+wild trance|Wild Trance|fairy|p|120
+will-o-wisp|Will-O-Wisp|fire|s|0
+wing attack|Wing Attack|flying|p|60
+wish|Wish|normal|s|0
+withdraw|Withdraw|water|s|0
+wonder ray|Wonder Ray|fairy|s|60
+wonder room|Wonder Room|psychic|s|0
+wood hammer|Wood Hammer|grass|p|120
+work up|Work Up|normal|s|0
+worry seed|Worry Seed|grass|s|0
+wrap|Wrap|normal|p|15
+wring out|Wring Out|normal|s|0
+x-scissor|X-Scissor|bug|p|80
+yawn|Yawn|normal|s|0
+zap cannon|Zap Cannon|electric|s|120
+zen headbutt|Zen Headbutt|psychic|p|80`,LSD=`1b,1v,2u,2z,36,37,3h,48,4q,6k,6m,7f,8c,8n,8q,8x,9b,ab,bv,bx,cg,ci,cq,cs,d0,d8,dc,dk,dq,ds,et,eu,fm,fs,fu,g0,g9,i6
+1b,1v,2u,2z,36,37,3h,48,4q,6k,6m,7f,8c,8k,8n,8q,8x,9b,ab,bv,bx,cg,ci,cq,cs,cx,d0,d8,dc,de,dk,dq,ds,et,eu,fm,fs,fu,g0,g9,i6
+1b,1p,1v,2u,2z,32,36,37,3h,48,49,4c,4q,6k,6m,7f,8c,8k,8n,8q,8x,9b,ab,bv,bx,cg,ci,cq,cs,cx,d0,d8,dc,de,dk,dm,dq,ds,er,et,eu,fm,fs,fu,g0,g9,i6
+1p,2,2e,2l,32,36,37,3h,4n,4q,4u,58,5i,5k,5l,6g,7f,84,85,8t,au,bb,bc,bv,c7,cq,cs,dk,dn,ee,fs,fu,g0,he,i9,ia
+19,1p,2,2e,2l,32,36,37,3h,4,4n,4q,4u,58,5b,5i,5k,5l,6g,7f,84,85,8c,8t,au,bb,bc,bv,c7,cq,cs,dk,dn,ee,et,fs,fu,g0,he,i4,i9,ia
+19,1p,2,2e,2l,32,36,37,3h,4,4n,4q,4u,58,5b,5i,5k,5l,5t,6g,6h,7f,84,85,8c,8t,au,bb,bc,bv,c7,cq,cs,dk,dm,dn,ee,et,fm,fs,fu,g0,he,i4,i9,ia
+2f,2u,36,37,3h,3l,4q,6m,6v,7f,7i,81,8a,8b,8c,9r,ay,bv,cg,cq,cs,dh,dk,e,eh,fs,fz,g,g0,hn,ho,hs,ht,k,q
+1v,2f,2u,36,37,3h,3l,4q,6m,6v,7f,7i,81,8a,8b,8c,9r,ay,bv,cg,cq,cs,cx,d0,de,dh,dk,e,eh,fm,fs,fz,g,g0,hn,ho,hs,ht,k,q
+19,1v,2f,2o,2u,36,37,3h,3l,4q,6m,6v,7f,7i,7o,7p,81,8a,8b,8c,8k,9r,ay,bv,cg,cq,cs,cx,d0,de,dh,dk,e,eh,fm,fs,fz,g,g0,hn,ho,hs,ht,k,q
+1c,1d,1j,2u,32,36,37,3h,3r,4q,4s,5w,67,6m,7f,7j,81,86,8c,9n,ar,ay,bv,bx,c,cg,cq,cs,d0,dk,e9,eh,fm,fs,fu,g0,g9,h3,i7,ic,q,y
+1c,1d,1j,1p,1v,2u,32,36,37,3h,3r,4q,4s,5w,67,6f,6m,7f,7j,81,86,8c,8k,9n,ar,ay,bv,bx,c,cg,cq,cs,cx,d0,dk,e8,e9,eh,fm,fs,fu,fz,g0,g9,h3,i7,ic,q,y
+0,14,1x,36,37,4p,4q,6e,6j,6n,7f,87,8s,9b,9k,af,bv,ci,cq,cs,dk,dl,et,fs,fu,g0,g8,i8
+0,14,2k,36,37,46,4q,4s,4v,6e,6j,6n,7f,87,8k,8o,8s,8x,9b,9k,af,b2,bv,bx,by,c7,ci,cq,cs,dk,e4,et,fs,fu,g0,g8,i4,i8
+0,14,2k,36,37,46,4q,4s,4v,6e,6j,6k,6n,7f,87,8k,8o,8s,8x,9b,9k,af,b2,bv,bx,by,c0,c7,ci,cq,cs,dk,e4,et,fs,fu,g0,g8,i4,i8
+19,1v,26,2u,32,36,37,3d,3h,3r,49,4q,4s,54,5t,61,68,7f,7o,7s,a0,ab,b,b0,ba,bv,cg,cq,cs,d0,d7,dc,de,di,dk,e2,fs,fu,g0,y
+19,1v,26,2u,32,36,37,3d,3h,3r,49,4b,4q,4s,54,5t,61,68,6c,7f,7o,7s,8k,a0,ab,b,b0,ba,bc,bv,c7,cg,cq,cs,cx,d0,d7,dc,de,di,dk,dm,e2,e5,fm,fs,fu,g0,y
+0,2l,32,36,37,3h,4q,69,7f,86,8f,9,aj,b7,bb,bc,bd,bf,bv,cg,cq,cs,dg,dk,ds,et,ez,fe,fo,fs,ft,fu,g0,h1,h8,y
+0,1s,2l,32,36,37,3h,4q,57,5w,69,7f,86,8f,8k,9,96,aj,b7,bb,bc,bd,bf,bv,by,cg,cq,cs,cx,dg,dk,ds,et,ez,fe,fo,fs,ft,fu,g0,g6,h1,h8,he,y
+0,1d,1s,1t,32,36,37,3k,4k,4l,4q,68,6c,7f,86,8f,8x,9,bv,cg,cq,cs,cx,di,dk,dz,ea,ez,fo,fs,ft,fu,g0,gt,gu,hj
+0,1d,1s,1t,32,36,37,3k,4k,4l,4q,68,6c,7f,86,8f,8x,9,bv,cg,cq,cs,cx,di,dk,dz,ea,ez,fe,fo,fs,ft,fu,g0,gp,gt,gu,hj
+1s,1t,6t,86,g3
+19,1s,21,2j,32,36,37,3b,3e,4q,57,5t,68,69,6t,74,7f,86,8f,8k,b,bc,bf,bh,bn,bv,c7,c8,cg,cq,cs,dk,ea,fs,fu,g0,g3,gz,n
+32,36,37,3h,4q,4s,50,5s,6i,6n,7f,87,8p,8s,9b,b2,b3,b6,bc,bs,bv,bx,c7,ci,cq,cs,dk,et,fs,fu,g0,hg
+32,36,37,3h,4q,4s,50,5s,6i,6n,6s,7f,86,87,8k,8p,8s,9b,b2,b3,b6,bc,bd,bs,bv,bx,c6,c7,ci,cq,cs,dk,en,et,f1,f2,fs,fu,g0,gg,gy,h0,hg
+46,86,bv,cq,fo,fp
+37,46,4q,6y,7f,86,8f,8x,bv,cq,fo,fp,i4
+1t,2k,36,37,46,4q,5t,7f,7t,86,8f,8x,a6,bh,bl,bv,bw,bx,cc,cf,cg,cn,cq,cs,dk,dz,e4,eb,ec,et,f6,fp,fs,g0,i4
+12,19,1l,2u,2v,32,36,37,4m,4q,4s,5,56,5t,62,67,7f,8t,ax,ay,b0,ba,bn,bv,bx,cg,cq,cs,d7,dk,dq,en,fs,ft,fu,g0,g5,gm,y
+12,19,1l,1p,2u,2v,32,36,37,4m,4q,4s,5,56,5t,62,67,7f,8k,8t,ax,ay,b0,ba,bn,bv,bx,cg,cq,cs,d7,dk,dq,en,fs,ft,fu,g0,g5,gm,y
+1d,21,25,2u,36,37,3h,3n,3s,4d,4o,4q,4s,7d,7f,7s,8,8l,ay,bk,bv,cg,cq,cs,dk,dm,e2,e9,fs,fu,g0,g4,gb,gw,h3,hl,i4,u
+1d,1x,21,25,2u,36,37,3h,3n,3s,4d,4o,4q,4s,7d,7f,7s,8,8k,8l,ay,bk,bv,cg,cq,cs,cw,dk,dm,e2,e9,fs,fu,g0,g4,gb,gw,h3,hl,i4,u
+1d,1p,1v,1x,2u,2z,36,37,3h,3n,3s,4c,4o,4q,4s,7f,8,8c,8k,8l,9f,ay,bk,bv,cg,cq,cs,cw,cx,d0,dc,dd,de,dk,dm,dy,e2,e9,fi,fm,fs,fu,g0,g4,gb,gw,h3,hl,i4,u,y
+1s,32,36,37,3c,3u,4q,7f,86,8f,9,bc,bf,bg,bv,c8,cq,cr,cs,cx,d0,d6,di,dk,et,fc,fs,fu,g0,gz,he,hf
+1s,32,36,37,3c,3u,4q,7f,86,8a,8f,9,bc,bf,bg,bv,c8,cq,cr,cs,cx,d0,d6,di,dk,et,fc,fs,fu,g0,gz,he,hf
+1s,1v,32,36,37,3c,3h,3u,4q,7f,86,8a,8c,8f,9,9n,bc,bf,bg,bv,c8,cq,cr,cs,cx,d0,d6,di,dk,en,et,fc,fm,fs,fu,g0,gz,he,hf,y
+11,1c,1q,1r,1v,36,3h,3l,3s,3u,4b,4q,6v,7f,7p,7t,a8,a9,bv,cg,cq,cs,dk,fs,fz,g0,hl,hn,hq,hs,ht,q
+11,1c,1q,1r,1v,2u,36,3h,3l,3s,3u,4b,4q,6v,7f,7p,7t,a8,a9,bv,bx,cg,cq,cs,d0,dk,dm,fm,fs,fz,g0,hl,hn,hq,hs,ht,q
+11,1c,1q,1r,1v,28,2u,36,3h,3l,3s,3u,49,4a,4b,4q,6v,7f,7p,7t,9w,a8,a9,bv,bx,cg,cq,cs,cx,d0,dk,dm,fl,fm,fr,fs,fz,g0,hl,hn,hq,hs,ht,q,y
+11,1c,1j,1q,1r,1v,2u,36,3h,3l,3s,3u,4b,4q,6v,7f,7p,7s,7t,a8,a9,b1,bv,bx,cg,cq,cs,d0,dk,dm,fm,fs,fz,g0,hl,hn,hq,hs,ht,q
+11,1c,1q,1r,1v,2u,2z,36,3h,3l,3s,4b,4q,4t,6v,7f,7p,84,8m,a8,a9,bv,bx,cg,cq,cs,cx,d0,de,dk,dm,ek,fb,fm,fs,fu,fz,g0,hl,hn,hq,hs,ht,q
+1c,1v,2b,36,4b,4n,4q,5i,5l,6y,7f,84,86,8m,au,bv,c,cl,cn,cq,cs,cz,d,d0,d1,de,dk,ej,fs,fu,g0,ic
+1c,1v,2b,2z,36,4b,4n,4q,4u,5i,5l,6y,7f,84,86,8m,au,bv,c,cl,cn,cq,cs,cz,d,d0,d1,de,dk,dv,ej,et,fm,fs,fu,g0,ic
+1v,2b,2z,36,4b,4n,4q,4u,5o,6y,7c,7f,84,86,9q,bv,cl,cn,cq,cs,cw,cz,d,d0,d1,de,dk,dv,ej,et,fm,fs,fu,g0,ic
+2,20,32,6c,az,bc,c7,ed,g0
+1p,2,20,2e,3,32,36,39,4,4q,62,6c,6s,7f,86,8c,ae,az,bc,br,bv,c7,cg,cn,co,cq,cs,dk,ed,ef,en,fs,fu,fz,g0,gg,gz,he,hf
+1p,2,20,2e,3,32,36,39,4,4q,62,6c,6s,7f,86,8c,ae,az,bc,br,bv,c7,cg,cn,co,cq,cs,cx,dk,ed,ef,en,fs,fu,fz,g0,gg,gz,he,hf
+1d,2u,36,4d,4q,7f,7n,7s,84,b5,bc,bk,bv,bx,cg,cq,cs,cv,di,dk,dm,ec,et,fh,fs,fu,fy,g0,g7,h3,hb,m,q
+17,1d,1v,2u,2z,36,4d,4q,7f,7n,7s,84,au,b5,bc,bk,bv,bx,cg,cq,cs,cv,cx,d0,di,dk,dm,ec,et,fh,fm,fs,fu,fy,g0,g7,h3,hb,m,q
+17,1d,1i,1p,1v,2u,2z,33,36,4d,4q,5b,7f,7n,7q,7s,7w,84,au,b5,bc,bk,bv,bx,cg,cq,cs,cv,cx,d0,di,dk,dm,ec,et,fh,fm,fs,fu,fy,fz,g0,g7,gr,h3,hb,m,q
+1n,1p,27,2u,2z,32,33,36,37,3h,49,4q,4s,4x,56,5x,70,71,7f,7h,84,8c,8e,8t,91,az,bv,cg,cq,cs,cx,d0,dc,dg,dk,dm,e5,en,fm,fs,fu,g0,z
+1n,1p,27,2u,2z,32,33,36,37,3h,49,4q,4s,4x,56,5x,70,71,7f,7h,84,8c,8e,8t,91,az,bv,cg,cq,cs,cx,d0,dc,dg,dk,dm,e5,en,fm,fs,fu,g0,z
+1d,2j,36,46,4n,4q,5e,5i,7e,7f,83,84,85,9o,9x,aj,au,av,bc,bi,bv,bx,cq,cs,dk,do,ej,et,fs,fu,g0,i0,i4,m
+1d,2j,36,37,46,4n,4q,5e,5i,7e,7f,83,84,85,9o,9x,aj,au,av,bc,bi,bv,bx,cq,cs,dk,do,ej,et,fs,fu,g0,i0,i4,m
+1d,2j,36,37,46,4n,4q,5e,5i,7e,7f,83,84,85,9o,9x,aj,au,av,bc,bi,bv,bx,cq,cs,dk,do,ej,et,fs,fu,g0,i0,i4,m
+0,25,2r,2s,36,4p,4q,4r,4s,4z,6e,6n,7d,7f,8s,9b,9k,be,bv,c7,ci,cq,cs,dk,et,fq,fs,fu,g0,i4
+0,19,25,2r,2s,36,4p,4q,4r,4s,4z,6e,6n,6t,7d,7f,7o,8s,8x,93,9b,9k,a5,be,bv,c7,ci,cq,cs,dk,en,et,fq,fs,fu,g0,gd,i4
+19,1z,21,25,36,37,3j,45,46,4d,4q,4s,4z,5h,7f,8x,9b,a3,a5,ar,bc,bv,bx,by,cg,cn,cq,cs,dk,e4,ej,fs,fu,g0,g2,g3,h3,i,i4,o
+10,19,1z,21,25,36,37,3j,45,46,4d,4q,4s,4z,5h,6z,75,7f,8x,9b,a3,a5,ar,bc,bv,bx,by,cg,cn,cq,cs,dk,dm,e4,ej,ff,fs,fu,g0,g2,g3,h3,i,i4,j,o
+1p,1v,2c,2u,2v,2z,31,36,3h,49,4q,4s,59,5w,69,7f,8c,8g,8t,91,92,at,au,ay,bv,bx,c6,c8,cg,cq,cs,cx,d0,dh,di,dk,dm,fi,fm,fs,fu,g0,gn,l
+1p,1v,2c,2u,2z,31,36,3h,49,4q,4s,59,5q,5w,69,7f,8c,8g,8t,91,92,at,au,ay,bv,bx,c6,c8,cd,ce,cg,cq,cs,cx,d0,dh,di,dk,dm,fi,fm,fs,fu,g0,gn,l
+1p,1v,2c,2u,2z,31,36,3h,49,4q,4s,59,5q,5w,69,7f,8c,8g,8t,91,92,at,au,ay,bv,bx,c6,c8,cd,ce,cg,cq,cs,cx,d0,dh,di,dk,dm,dr,en,fi,fm,fs,fu,g0,gn,l
+14,1s,1v,2u,2z,36,3h,3u,4q,4u,6u,7f,8a,8x,af,az,b7,bc,bv,c7,ch,cn,cq,cs,d0,de,dk,dn,et,f1,fm,fs,fu,g0,g9,ge,s
+14,1s,1v,2u,2z,36,3h,3u,4q,4u,6u,7c,7f,8a,8b,8k,8x,9e,a1,af,az,b7,bc,bv,c7,ch,cn,cq,cs,d0,de,dk,dn,et,f1,fm,fs,fu,g0,g9,ge,h0,h3,hj,id,s
+17,1c,1d,23,2u,33,36,37,3h,4q,4s,7f,8c,8t,8x,9,ay,b9,bv,bx,c8,ca,cg,cn,cq,cs,cv,d0,d6,dg,dk,en,ex,fm,fs,fu,g0,gp,gr,gt,hj,hy,i4,k,u
+17,1c,1d,1p,1v,23,2u,33,36,37,3h,4i,4q,4s,7f,8c,8k,8t,8x,9,ay,b9,bv,bx,c8,ca,cg,cn,cq,cs,cv,cx,d0,d6,dg,dk,en,ex,fm,fs,fu,fz,g0,gp,gr,gt,hj,hy,i4,k,u
+1d,2j,2k,2r,2s,36,46,4q,4s,6m,7f,7t,84,8c,8x,9y,bv,bw,bx,by,c1,cg,cn,co,cq,cs,d0,dk,e4,en,fh,fs,fu,g0,g9,h3,h5,i4,ie,y
+1d,1v,2j,2k,2r,2s,36,3q,46,4q,4s,6m,7f,7t,84,8c,8x,9y,bv,bw,bx,by,c1,cg,cn,co,cq,cs,d0,dk,e4,en,fh,fs,fu,g0,g9,h3,h5,i4,ie,y
+1d,1v,2j,2k,2r,2s,36,3q,46,4q,4s,6m,7f,7t,84,8c,8x,9y,bv,bw,bx,by,c0,c1,cg,cn,co,cq,cs,cx,d0,dk,e4,en,et,fh,fm,fs,fu,g0,g9,h3,h5,i4,ie,y
+10,1d,2u,32,36,3i,4,46,4o,4q,4u,6c,6s,7f,86,bc,bk,bv,c,c7,cg,cq,cs,d0,dk,ed,ee,en,f3,fg,fm,fs,fu,g0,g1,gy,gz,he,ia,ic,q
+10,1c,1d,1v,2u,32,36,3i,4,46,4o,4q,4u,6c,6s,7f,86,bc,bk,bv,c,c7,cg,cq,cs,d0,dk,ed,ee,en,et,f3,fg,fm,fn,fs,fu,g0,g1,gy,gz,he,ia,ic,q
+13,2r,2s,36,3h,45,46,4p,4q,4r,4s,4z,51,7f,8u,8x,ar,ay,b8,b9,bv,bx,c7,cg,cn,cq,cs,d9,db,dk,fs,fu,g0,g3,i,i2,i4
+13,2r,2s,36,3h,45,46,4p,4q,4r,4s,4z,51,7f,8u,8x,ar,ay,b8,b9,bv,bx,c7,cg,cn,cq,cs,d9,db,dk,dm,fs,fu,fz,g0,g3,i,i2,i4
+1d,1v,23,2z,36,3c,3h,3k,4i,4q,4u,7f,8c,8x,9f,a9,bv,cg,cq,cs,d0,d6,dc,de,dk,dn,ex,fi,fm,fs,fu,g0,gt,gu,gv,hj,hy,i4
+1d,1p,1v,23,2u,2z,36,3c,3h,3k,3z,4c,4i,4q,4u,6x,7f,8c,8x,9f,a9,bv,cg,cq,cs,cx,d0,d6,dc,de,dk,dn,ex,fi,fm,fs,fu,g0,gp,gt,gu,gv,hj,hy,i4
+1b,1v,2p,2u,2z,36,3h,3u,4q,4s,4u,51,56,5h,7f,91,9v,bv,bx,co,cq,cs,cz,d1,d2,de,dk,fs,ft,fu,g0,gh
+1b,1v,2p,2u,2z,36,3h,3u,4q,4s,4u,51,56,5h,6x,70,7f,91,9v,bv,bx,co,cq,cs,cz,d0,d1,d2,de,dk,dm,e9,fj,fm,fs,ft,fu,g0,gh,i6
+1b,1p,1v,1x,2p,2u,2z,36,3h,3u,4q,4s,4u,56,5h,70,7f,8c,8k,91,9v,bv,bx,co,cq,cs,cw,cz,d0,d1,d2,de,dk,dm,e9,f0,fj,fm,fs,ft,fu,g0,gh,i6
+17,25,33,36,3h,4n,4q,5b,5i,5k,5l,7a,7d,7f,7n,84,8c,8t,9,ar,au,b9,bv,cn,cq,cr,cs,cu,cv,dk,fs,fu,g0,ge
+17,33,36,3h,4n,4q,5b,5i,5k,5l,5m,7a,7d,7f,7n,84,8c,8k,8t,9,ar,at,au,b9,bv,cn,cq,cr,cs,cu,cv,d0,dk,et,fm,fs,fu,g0,ge
+17,1v,1y,33,36,3h,4n,4q,4w,5b,5i,5k,5l,5m,7a,7d,7f,7n,84,8c,8k,8t,9,ar,at,au,b9,bv,cn,cq,cr,cs,cu,cv,cx,d0,dk,et,fm,fs,fu,g0,ge,gr
+2t,36,4n,4q,4u,5i,5l,5o,6u,79,7f,84,8k,8x,8z,9d,9s,a1,au,bv,cn,cq,cs,de,di,dk,dn,fs,fu,fy,g0,g9,i0
+2t,36,4n,4q,4u,5i,5l,5o,6u,79,7f,84,8k,8x,8z,9d,9s,a1,au,bv,cn,cq,cs,de,di,dk,dn,et,fs,fu,fy,g0,g9,h3,i0
+1p,1v,2t,36,4n,4q,4u,5i,5l,5o,6u,79,7f,84,8k,8x,8z,9d,9s,a1,au,bv,cn,cq,cs,cx,d0,de,di,dk,dm,dn,et,fm,fs,fu,fy,g0,g9,h3,i0
+e3
+36,37,3h,4q,51,5h,5w,7f,84,8c,8u,bk,bv,cg,cq,cs,d0,dk,e9,fs,fu,g0,gc,gh
+10,1c,1d,1p,1v,2u,2z,36,37,3h,43,4q,51,5w,7f,84,8c,8u,au,bk,bv,cg,cq,cs,cx,d0,dk,e9,et,f3,fg,fm,fs,fu,fz,g0,g1,gc,gh,gn,h3,ia
+19,1c,1d,1p,1v,2u,2z,36,37,3h,3l,3w,3x,43,4q,4w,51,5t,5w,7f,7q,84,8c,8k,8u,a4,am,at,au,bk,bv,cg,cq,cs,cx,d0,dk,dm,e9,et,f3,fg,fm,fs,fu,fz,g0,g1,gc,gh,gn,h3,ht,ia
+0,12,1x,2k,36,46,4q,4u,4v,6e,7f,7t,86,8s,8x,9b,9k,af,be,bv,bx,c,cn,cq,cs,dk,e4,eb,et,fq,fs,fu,g0,g8,hb,i8,w
+0,12,1v,1x,2k,36,46,4g,4h,4q,4u,4v,6e,7f,7t,86,8o,8s,8x,9b,9k,af,be,bv,bx,c,c4,cn,cq,cs,dk,dl,e4,eb,et,fh,fm,fq,fs,fu,g0,g8,h3,hb,i6,i8,w
+0,1v,1x,23,24,2j,36,46,4h,4q,4u,6e,7f,7t,86,89,8c,8s,9b,9k,bv,bx,cg,cn,cq,cs,dk,dz,e4,et,f7,fm,fq,fs,fu,g0,gt,gv,h3,hj,i4,w
+1k,1t,3,36,3a,45,4o,4q,4s,4z,63,6v,7f,7u,81,86,8x,a3,af,bm,bv,bx,c7,cg,cl,cn,cq,cs,dk,dv,dz,et,fe,fp,fs,fu,fz,g0,g2,g3,i,i3,i4,j,q
+1k,1t,3,36,3a,45,4o,4q,4s,4z,63,6v,7f,7u,81,86,8x,a3,af,bm,bv,bx,c7,cg,cl,cn,cq,cs,dk,du,dv,dz,et,fe,fp,fs,fu,fz,g0,g2,g3,i,i3,i4,j,q
+17,1v,2u,2z,33,36,37,3h,4q,7f,8c,8o,8s,9b,9k,bv,cg,ci,cq,cs,cz,d,d0,d8,dc,de,dk,dl,et,fm,fs,fu,g0,g8,hg,i3
+17,1p,1v,2u,2z,33,36,37,3h,4q,6b,70,7f,8c,8o,8s,9b,9k,bv,cg,ci,cq,cs,cx,cz,d,d0,d8,dc,de,dk,dl,et,fm,fs,fu,fz,g0,g8,hg,i3,i6
+1q,1r,36,3l,4q,4s,6v,7f,7p,86,8r,bv,bx,cg,cq,cs,dk,dz,fe,fp,fs,fz,g0,hq,hs,hv,i7,q,y
+19,1q,1r,36,37,3l,4q,4s,5t,6e,6v,7f,7p,86,8f,8r,9k,bv,bx,cg,cq,cs,dk,dz,f,fe,fn,fp,fs,fz,g0,hq,hs,ht,hv,i7,q,y
+19,1j,2u,32,36,37,3f,3l,3t,4q,4s,56,59,5v,6v,7f,7p,81,8c,8k,8y,9,bv,bx,cg,cq,cs,dk,e,f5,fs,fz,g0,g4,hd,hn,ho,hp,hq,hs,ht,p,q
+19,1j,2u,32,36,37,3f,3l,3t,4q,4s,56,59,5v,6v,7f,7p,81,8c,8k,8y,9,bv,bx,cg,cq,cs,dk,e,f5,fs,fz,g0,g4,hd,hn,ho,hp,hq,hs,ht,p,q
+1o,1q,1r,1v,2,3,32,36,3h,4q,6v,7f,86,87,bc,be,bv,bx,c7,cf,cg,cn,cq,cs,dk,ef,eq,f,f6,fs,g0,gz,hf,hq,hs,q
+19,2u,2v,36,37,3m,47,4q,4s,51,67,7f,b0,ba,bv,cd,cg,cq,cs,d0,dk,fs,fu,g0,u
+19,1l,1p,2u,2v,36,37,3m,47,4q,4s,51,5t,5u,62,67,7f,7h,8k,8t,ax,b0,ba,bv,cd,cg,cq,cs,cx,d0,d5,dk,dm,e6,fm,fs,fu,g0,i1
+17,1d,20,2v,32,36,37,3h,4q,4x,61,7f,7i,86,8c,ae,bb,bc,bv,bx,c8,ca,cb,cg,cq,cs,dg,dk,ea,en,fs,fu,g0,g9,gc,gy
+17,1d,1p,20,2u,2v,32,33,36,37,3h,4q,4w,61,6s,7f,7i,86,8c,8k,ae,bb,bc,bd,bv,bx,c8,ca,cb,cg,cq,cs,cx,d0,dg,dk,dm,ea,en,fm,fs,fu,g0,g9,gc,gy,ha
+12,13,1d,25,2u,36,3u,46,4o,4q,4s,5y,6m,7f,8,84,8l,8v,8x,9b,9u,bk,bv,bx,c7,cg,cn,co,cq,cs,d,d0,db,dk,dm,et,fs,fu,g0,g2,h3,i2,i4,ic,y
+12,13,19,1d,25,2u,36,3u,46,4o,4q,4s,4z,5t,5y,6m,7f,8,84,8l,8v,8x,9b,9u,bk,bv,bx,c7,cg,cn,co,cq,cs,d,d0,db,dk,dm,et,fs,fu,g0,g2,h3,i2,i4,ic,y
+12,13,19,1d,25,2u,36,3a,3u,46,4o,4q,4s,4w,4z,5t,5y,6m,7f,8,84,8k,8l,8v,8x,9b,9u,b,bk,bv,bx,c7,cg,cn,co,cq,cs,d,d0,db,dk,dm,e6,et,fs,fu,g0,g2,h3,i2,i4,ic,p,y
+1p,1v,20,2e,2z,36,3h,4c,4q,56,6g,71,7f,8c,9x,a8,bv,cg,cq,cs,d0,dc,dd,de,di,dk,dy,e5,e9,fm,fs,fu,g0,i9
+1p,1v,20,2e,2z,36,3h,4c,4q,56,6g,71,7f,8c,9x,a8,bv,cg,cq,cs,d0,dc,dd,de,di,dk,dy,e5,e9,fm,fs,fu,g0,i9
+0,1p,1v,2s,2u,32,36,37,3e,3h,4q,4r,4s,56,6n,7f,87,8s,8t,9b,ah,az,b7,bc,bf,bv,cg,cq,cs,d,dc,de,dk,dm,et,f1,fs,ft,fu,g0
+0,1p,1v,2s,2u,32,36,37,3e,3h,4q,4r,4s,56,6n,7f,87,8k,8s,8t,9b,ah,az,b7,bc,bf,bv,cg,cq,cs,ct,dc,de,dk,dm,en,et,f1,f2,fm,fs,ft,fu,g0
+0,1p,1v,2s,2u,32,36,37,3e,3h,4q,4r,4s,56,6b,6n,75,7f,87,8s,8t,8x,9b,ag,ah,az,b3,b7,bc,bf,bv,c7,cg,cq,cs,d,d0,dc,de,dk,dm,et,f1,fm,fs,ft,fu,g0,i6
+14,17,1v,2z,32,33,36,3h,4b,4c,4q,55,56,5g,7f,7q,8k,ab,bv,cq,cs,cz,d0,d2,dc,dd,de,dk,et,fm,fs,fu,fx,g0
+14,19,1i,1t,1v,2z,32,36,3h,3v,49,4b,4c,4q,56,5t,7f,7q,8k,ab,bv,cq,cs,cz,d0,d2,dc,dd,de,di,dk,et,ev,fm,fs,fu,fy,g0,hb
+14,19,1i,1p,1t,1v,2z,32,36,3h,3v,3w,3x,42,43,49,4b,4c,4q,56,5t,7f,7q,84,8c,8k,ab,bv,cq,cs,cz,d0,d2,dc,dd,de,di,dk,et,ev,fm,fs,fu,fy,g0,hb
+32,36,4n,4q,4u,5a,5l,7f,84,8f,8m,8z,au,bc,bv,cq,cs,de,dk,dz,et,fe,fo,fp,fs,fu,g0,i0,i7,y
+19,32,36,37,4n,4q,4u,58,5a,5e,5l,5t,7f,84,8f,8k,8m,8z,au,b,bc,bv,cc,cq,cs,de,dk,dz,et,fe,fo,fp,fs,fu,g0,i0,i7,y
+19,1v,2u,2z,32,36,37,3h,46,4q,5,56,68,6r,6y,7f,8c,8f,8j,bc,bd,bf,bv,ca,cg,ck,cq,cs,cx,d0,dc,de,di,dk,e7,ea,fm,fs,fu,g0,g6,ha,i1,ib,y
+19,1p,1v,2u,2z,32,36,37,3h,46,4q,5,56,5b,68,6r,6y,7f,7w,8c,8f,8j,ak,bc,bd,bf,bv,ca,cg,ck,cq,cs,cx,d0,dc,de,di,dk,e7,fm,fs,fu,g0,g6,gr,ha,i1,ib,y
+1s,2u,32,36,37,3h,4q,55,57,6,62,68,6r,6y,7f,7i,8c,8f,8k,9r,bv,c8,cq,cs,dc,de,dk,ea,eh,fs,fu,g0,g6,hh,ib,y
+1s,2u,32,36,37,3h,4q,55,57,6,62,68,6r,6y,7f,7i,8c,8f,8k,9r,ak,bv,c8,cq,cs,cx,dc,de,dk,ea,eh,fs,fu,g0,g6,hh,ib,y
+19,2j,2k,2q,36,46,4q,4s,6a,6q,7f,8t,8x,93,9h,9y,aj,as,b,b0,bp,bv,bx,by,c3,c4,cg,cn,co,cq,cs,dk,e4,et,fk,fs,fu,g0,gd,gj,gk,i2,i4,y
+19,2j,2k,2q,36,46,4q,4s,5t,6a,6q,7f,8k,8t,8x,93,9h,9y,aj,as,b,b0,bp,bv,bx,by,c3,c4,cg,cn,co,cq,cs,dk,e4,et,fk,fs,fu,g0,gd,gj,gk,h3,i2,i4,y
+1d,1h,25,2j,2q,33,36,3a,3h,46,4q,4s,4z,5j,7f,7n,8c,8u,8x,9b,9r,a5,a6,ay,bv,bx,cg,cn,cq,cs,dk,fs,fu,g0,g4,gc,h3,h7,i4,ic,q,u,y
+1d,1h,25,2j,2q,33,36,3a,3h,46,4q,4s,4w,4z,5j,5t,7f,7n,8c,8u,8w,8x,9b,9r,9t,a5,a6,ay,bv,bx,cg,cn,cq,cs,dk,fm,fs,fu,g0,g4,gc,h3,h7,ht,i4,ic,q,s,u,y
+14,1z,22,2k,2u,2z,36,3f,46,4q,55,6,60,61,7f,7h,8e,8x,9j,9w,bq,bv,bx,cg,cl,cn,cq,cs,cu,d0,dk,dm,e4,fm,fs,fu,g0,h3,ie,y
+14,1z,22,2k,2u,2z,36,3f,46,4q,55,5d,6,60,61,7f,7h,7y,8e,8k,8x,9j,9w,bq,bv,bx,cg,cl,cn,cq,cs,cu,d0,dk,dm,e4,fm,fs,fu,g0,gs,h3,ie,y
+1v,25,2u,2z,36,3c,3h,3u,4q,5h,6m,7f,8c,8l,9f,af,ar,bv,cg,cq,cs,d0,d6,de,dk,e9,fi,fm,fs,fu,g0,g9,ge
+1p,1v,2u,2z,36,3c,3h,4c,4q,5b,5h,67,6f,6m,7f,7j,8c,8j,9f,bv,cg,ch,cq,cs,d0,d6,de,dg,dk,e9,fi,fm,fs,fu,g0,ge,gr,l
+13,1d,1z,25,2k,2p,2v,36,37,3a,3h,3j,46,4q,4s,72,7d,7f,8c,8h,8k,8x,9b,9y,a5,ay,bv,bx,by,c4,cg,cn,co,cq,cs,dk,dm,e4,fs,fu,g0,g9,gc,gj,i4,k,q,y
+1v,2u,2z,36,4q,4u,6y,71,7f,81,8a,ab,bv,cq,cs,cw,cz,d0,dc,de,dk,dm,eg,fa,fj,fm,fs,fu,g0,g9
+1v,2u,2z,36,4c,4q,4u,6y,71,7f,81,8a,ab,bn,bv,cq,cs,cw,cz,d0,dc,de,dk,dm,eg,et,fa,fi,fj,fm,fs,fu,g0,g9,h3
+1v,2u,2z,36,4c,4q,4u,6y,71,7f,81,8a,8k,ab,bn,bv,cq,cs,cw,cz,d0,dc,de,dk,dm,eg,et,fa,fi,fj,fm,fs,fu,g0,g9,h3
+19,1z,2k,36,46,4p,4q,4s,5p,5t,6a,6t,77,7f,83,8x,a,ar,b,b5,bv,bx,by,c,cg,cn,cq,cs,dk,e1,e4,fs,fu,g0,g7,i4,l,o,y
+19,1z,2k,36,46,4p,4q,4s,5p,5t,6a,6t,77,7f,83,8x,a,ar,b,b5,bv,bx,by,c,cg,cn,cq,cs,dk,e1,e4,fs,fu,g0,g7,i4,l,o,y
+1d,2j,2k,2q,36,38,39,46,4q,4s,4v,6a,73,7e,7f,7t,83,88,9b,9o,9y,ae,ai,bc,bi,bv,bx,c3,c5,cg,cn,co,cq,cs,dk,e4,en,fs,fu,g0,h3
+1d,2j,2k,2q,36,38,39,46,4q,4s,4v,6a,73,7e,7f,7t,83,88,9b,9o,9y,ae,ai,bc,bi,bv,bx,c1,c3,c5,cg,cn,co,cq,cs,dk,e4,en,fs,fu,g0,h3
+1v,2q,2y,2z,36,3a,3h,46,4q,4z,7f,7t,81,8c,a5,bn,bv,bx,cg,ch,cn,cq,cs,cw,cy,d,d0,de,dk,dv,e4,fa,fs,fu,fz,g0,i3,i4,q
+1p,1v,2g,2q,2y,2z,36,3a,3h,46,4q,4z,7f,7t,81,8c,a5,bn,bv,bx,cg,ch,cn,cq,cs,cw,cx,cy,d,d0,de,dk,dv,e4,fa,fm,fs,fu,fz,g0,i3,i4,q
+1d,25,2p,2u,36,3h,46,4e,4o,4q,4s,7f,84,8c,8x,9b,bk,bv,bx,cg,cn,co,cq,cs,dk,dm,e2,et,fs,fu,g0,g2,h3,i4,q
+13,1c,1d,2q,2u,36,3c,3h,3j,3s,46,4o,4q,4s,5y,6l,6m,76,7d,7f,8,84,8c,8v,8x,93,9b,9t,9u,9x,a5,a6,bk,bv,bx,cg,cn,co,cq,cs,d0,dk,dm,e2,e4,et,f7,fk,fm,fs,fu,g0,h3,i4,q,y
+13,1c,1d,2q,2u,36,3c,3h,3j,3s,46,4o,4q,4s,5y,6l,6m,76,7d,7f,8,84,8c,8v,8x,93,9b,9t,9u,9x,a5,a6,bk,bv,bx,cg,cn,co,cq,cs,d0,dk,dm,e2,e4,et,f7,fk,fm,fs,fu,g0,h3,i4,q,y
+1b,1d,1v,2z,36,3k,4b,4q,4u,6y,7f,8z,9e,bn,bv,cq,cs,cw,cz,d0,d1,de,dk,ex,fj,fm,fs,fu,g0,g9,gu,h3,hj,i4,id
+1b,1d,1v,2z,36,3k,4b,4q,4u,6l,7b,7f,8a,8z,9d,9e,bn,bv,cq,cs,cw,cz,d0,de,dk,ex,fj,fm,fs,fu,g0,g9,gu,h3,hj,hx,i4,id
+20,2j,2u,2z,36,3e,3f,3h,4m,4q,4u,50,6o,7f,86,8u,8x,9o,av,ax,bc,bi,bv,bx,c7,cg,co,cq,cs,d0,d1,de,dk,do,ds,eg,en,f4,fa,fs,fu,g0,m,y
+1y,2u,2z,36,37,3h,3v,40,41,49,4n,4q,5e,5i,5w,7a,7f,84,8x,a7,au,bv,cq,cs,d0,dc,de,dk,et,f1,fm,fs,fu,g0
+1b,1p,1v,1y,2u,2z,36,37,3h,3v,3z,40,41,49,4n,4q,5e,5i,5w,79,7a,7f,84,8c,8x,a7,at,au,bv,cq,cs,cx,d0,dc,de,dk,et,f1,fm,fs,fu,g0
+1d,1v,2q,2z,36,3h,3o,46,4b,4q,4u,4v,7c,7f,8i,8x,9f,9y,ap,bv,c4,c5,cg,cn,co,cq,cs,cx,d,d0,dc,dd,de,dk,e4,et,ey,fk,fm,fs,fu,g0,h3,i4,s
+1s,1v,2e,2l,2z,32,36,3h,3u,4p,4q,5h,7f,86,8c,ag,bc,bv,c7,c8,cg,cq,cs,d0,dc,di,dk,e9,en,et,fo,fs,fu,g0,ge,i9
+1c,1s,1t,1v,2e,2l,2z,32,36,3h,4p,4q,5h,6g,74,7f,86,8c,8k,ag,bc,bv,c7,c8,cg,cq,cs,d0,dc,di,dk,e9,en,et,fm,fo,fs,fu,fz,g0,ge,ha,i9
+1v,2z,36,3h,3u,4b,4c,4n,4q,5i,5l,5w,6m,7f,84,8m,9f,au,bv,c,cg,cq,cs,d0,de,dk,et,fm,fs,fu,fw,g0,g9,ge,ic
+1v,2z,36,3h,4b,4c,4n,4q,4t,4u,5g,5i,5l,5w,6m,7f,84,8m,9f,au,bv,c,cg,cq,cs,cz,d0,de,dk,dy,et,f3,fg,fm,fs,fu,fw,g0,g1,g9,ge,ic
+1,1d,1v,2q,2u,2z,36,37,3h,46,4q,4u,6a,6g,6l,7f,83,8c,ay,bn,bv,bx,c2,c5,cn,cq,cs,cx,cz,d,d0,d1,de,di,dk,et,fj,fm,fs,fu,fy,g0,h3,h5,hj,i4,ie
+1,1d,1p,1v,2q,2u,2z,33,36,37,3h,46,4q,4u,5b,6a,6f,6g,6l,7f,7w,83,8c,8k,ay,bn,bv,bx,c2,c5,cn,cq,cs,cv,cx,cz,d,d0,d1,de,di,dk,et,fj,fm,fs,fu,fy,g0,gr,h3,h5,hj,i4,ie
+17,1f,1g,1p,2u,32,33,36,37,3h,4q,5b,7f,7n,7r,7w,84,8c,8r,ak,ar,ax,bb,bc,bv,bx,c8,cg,cq,cs,cx,d0,dc,dg,dk,em,en,fn,fs,fu,fv,g0,gr
+1v,2u,2y,2z,36,37,3h,48,4q,4y,4z,69,6i,7f,9b,a3,a9,ab,ah,ay,b9,bv,c7,cg,cn,cq,cs,d0,d8,dc,de,dh,dk,dm,et,f1,fm,fs,fu,g0,i4,i8
+1p,1v,2u,2y,2z,36,37,3h,48,4c,4q,4y,4z,69,6i,6x,7f,9b,a3,a9,ab,ah,ay,b9,bt,bv,c7,cg,cn,cq,cs,cx,d0,d8,dc,de,dh,dk,dm,et,f1,fm,fs,fu,g0,gn,hz,i4,i8
+1v,2,29,2z,32,36,3h,3l,3p,4b,4q,6c,7f,81,bc,bv,bx,c7,cg,cq,cs,d0,dc,dd,de,dk,dv,e8,ed,fs,fu,fz,g0,g2,he,i3,v
+1i,1q,1r,2k,36,3l,46,4q,61,6v,7f,7p,7s,7t,9i,9y,bv,bw,bx,by,c5,cg,cn,co,cq,cs,d4,d9,dk,en,f,fs,fy,fz,g0,hb,hs,ht,i4,q
+1i,1q,1r,2k,36,3l,46,4o,4q,61,6v,7f,7p,7s,7t,9i,9y,bv,bw,bx,by,c5,cg,cn,co,cq,cs,d4,d9,dk,en,f,fm,fs,fy,fz,g0,h3,hb,hs,ht,i4,q
+1c,1v,2u,2z,36,3l,4b,4q,6v,6y,7f,86,9o,a8,aa,ab,ac,bv,c7,cg,cl,co,cq,cs,d,de,dk,fs,fz,g0,hn,ho,hs,ht,q
+1c,1v,2u,2z,36,3h,3l,4b,4q,5g,6v,6y,7f,86,9o,a8,aa,ab,ac,bv,c7,cg,cl,co,cq,cs,d,d0,de,dk,fm,fs,fz,g0,hn,ho,hs,ht,q
+1d,36,39,3q,3r,46,4q,6m,6p,6q,7f,8x,ai,ar,bi,bo,bp,bv,bx,cg,cl,cn,co,cq,cs,dc,dk,do,e4,em,en,fs,fu,g0,gx,h3,hj,i4,l,m,y
+1d,1p,1v,33,36,39,3q,3r,3u,46,4q,4v,6m,7f,8c,8x,9,99,ae,ai,ar,bi,bv,bx,cg,cn,co,cq,cs,d0,dc,dk,e4,em,en,fh,fm,fs,fu,g0,h3,h7,hj,i4,ie,l,m,y
+16,1d,2,24,7f,ex,g9,gu,hc,hj
+16,1d,2,24,2e,33,36,3k,3l,4,4q,6c,71,7f,8c,8x,bv,cg,cq,cs,dk,ex,fs,fu,fz,g0,gn,gu,gv,hc,hj,hy,id
+16,1d,1p,1v,2,24,2e,2z,32,33,34,36,37,3k,3l,4,4q,6c,71,7f,89,8c,8x,bv,cg,cq,cs,cx,d0,dk,dm,ex,fm,fs,fu,fz,g0,gn,gu,gv,hc,hj,ht,hy,id
+1n,1p,1q,1v,2c,2u,2w,2z,36,37,3f,3h,3l,3q,44,4q,6v,6y,7f,81,8a,8c,8f,8j,bv,bx,c8,cb,cg,cj,cq,cs,ct,d0,dk,dm,fm,fs,fz,g,g0,g6,gg,hs,ht
+1d,36,3k,4k,4q,4u,5o,6u,7f,8x,8z,9d,9e,9s,a1,bv,bx,cg,cn,cq,cs,de,di,dk,dx,ev,ex,fs,fu,fy,g0,g9,gt,gu,hj,id
+1d,36,3k,4i,4k,4q,4u,5o,6u,7f,8x,8z,9d,9e,9s,a1,bv,bx,cg,cn,cq,cs,de,di,dk,dx,ev,ex,fs,fu,fy,g0,g9,gt,gu,h3,hj,id
+1d,36,3k,4i,4k,4q,4u,5o,5t,6u,7f,8x,8z,9d,9e,9s,9z,a1,bv,bx,cg,cn,cq,cs,de,di,dk,dx,ev,ex,fs,fu,fy,g0,g9,gt,gu,h3,hj,id,x
+1d,36,3f,4i,4k,4q,4u,5o,5t,6d,7f,8x,8z,9d,9e,9s,9z,aw,bv,bx,cg,cn,co,cq,cs,de,dk,dw,dx,dz,ev,ex,fs,fu,fy,g0,g9,gt,gu,h3,hj,id
+13,1j,2u,36,3r,45,46,4q,4s,5,5u,7f,7h,8e,8x,91,94,9g,b9,bv,bx,cg,cn,co,cq,cs,d0,d4,dk,dm,en,fm,fs,fu,g0,gi,h4,h6,hn,i4,x,y
+13,19,1j,2u,36,3r,45,46,4q,4s,5,5u,7f,7h,8e,8x,91,94,9g,b9,bv,bx,cg,cn,co,cq,cs,cx,d0,d4,dk,dm,en,fm,fs,fu,fz,g0,gi,h4,h6,hn,i4,x,y
+1d,36,3e,46,4q,6o,6w,7f,81,8u,93,9i,9o,az,b1,b4,bc,bi,bv,bx,cg,co,cq,cs,db,dk,ds,en,f4,f5,fs,fu,g0,m
+1d,32,36,37,3e,46,4q,6o,6w,7f,81,8k,8u,93,9i,9o,ak,az,b1,b4,bc,bi,bv,bx,cg,co,cq,cs,db,dk,dm,dq,ds,en,ew,f4,f5,fs,fu,g0,m
+2j,36,3i,46,4q,61,6a,7e,7f,8t,9i,aj,az,bc,bi,bv,bx,c8,cg,co,cq,cs,dk,do,ds,e4,en,fs,fu,g0,i0,m,q
+16,1v,2j,2u,36,3i,46,4q,5d,61,6a,6l,7e,7f,7y,8t,9i,aj,az,bc,bi,bv,bx,c8,cg,co,cq,cs,d0,dk,dm,do,dr,ds,e4,en,ew,fm,fs,fu,g0,gs,i0,m,q
+16,1v,2j,2u,36,3i,46,4q,5d,61,6a,6l,7e,7f,7y,8k,8t,9i,aj,az,bc,bi,bv,bx,c8,cg,co,cq,cs,d0,dk,dm,do,dr,ds,e4,en,ew,fm,fs,fu,g0,gs,i0,m,q
+36,37,46,4q,4s,57,5f,7f,7t,8a,8f,8x,9w,9y,ae,bv,bw,bx,c,c5,cg,cn,co,cq,cs,d4,dk,e4,eh,fp,fs,fu,g0
+2u,32,36,37,46,4q,4s,57,5f,7f,7t,8f,8k,8x,95,9w,9y,ae,bv,bw,bx,c1,c2,c3,c5,cg,cn,co,cq,cs,cx,d4,dk,e4,eh,fm,fp,fs,fu,g0,g6,ib
+14,4q,6v,7u,81,a2,q
+1,14,1d,1p,1v,2u,2z,36,4q,4u,6v,6z,70,7f,7u,7x,7y,7z,80,81,a2,bv,cg,cq,cs,cw,cx,cy,d0,de,dk,dm,fj,fm,fs,fz,g0,hx,q,r
+14,1a,1p,36,39,3l,4q,5t,63,6v,6z,7f,7u,7v,81,82,a2,ai,aq,bv,bx,c7,c9,cg,co,cq,cs,dk,em,en,fs,fz,g0,g5,gg,ht,q,r
+14,1p,1v,35,36,3h,3v,3x,41,42,43,4q,64,6v,6z,7f,7u,7w,81,8c,a2,at,bv,cg,cq,cs,cx,d0,dk,du,fm,fs,fz,g0,q,r,t
+19,1l,1p,2u,32,36,37,4q,4s,5,53,55,5t,67,68,7,7f,8c,8j,8k,8t,9,a,ak,b,b0,bd,bj,bv,bx,cn,cq,cs,d0,dc,dk,ea,fs,fu,g0,g6,y
+19,1l,1p,2u,32,36,37,4q,4s,5,53,55,5t,67,68,7,7f,8c,8j,8k,8t,9,a,ak,b,b0,bd,bj,bv,bx,cn,cq,cs,d0,dc,dk,ea,f8,fm,fs,fu,fz,g0,g6,i1,y
+h2
+9p,h2
+1d,23,2j,36,3k,3t,46,4k,4q,7e,7f,8x,as,bi,bv,bx,cg,cn,co,cq,cs,dk,dx,en,fs,fu,g0,gt,gu,h4,hb,hj,m
+1d,2j,36,3e,3j,3l,45,46,4q,6o,78,7e,7f,8v,8x,90,a5,a6,aj,bc,bi,bv,bx,c7,cg,cn,co,cq,cs,dk,do,e4,en,f4,fs,fu,fz,g0,g2,ga,ht,i4,q
+1d,2j,36,3e,3j,3l,45,46,4q,6o,78,7e,7f,8v,8x,90,a5,a6,aj,bc,bi,bv,bx,c7,cg,cn,co,cq,cs,dk,do,e4,en,f4,fs,fu,fz,g0,g2,ga,ht,i4,q
+2c,2u,36,37,3f,3l,4q,4s,6v,7f,8,81,8b,8c,8k,8y,9q,bv,cb,cg,cq,cr,cs,da,dk,e,ea,eh,fs,fz,g,g0,g6,hn,hs,ht,hv
+2c,2u,36,37,3f,3l,4q,4s,6v,7f,8,81,8b,8c,8k,8y,9q,bv,cb,cg,cq,cr,cs,d0,da,dk,e,ea,eh,fs,fz,g,g0,g6,hn,hs,ht,hv
+17,1p,33,36,3l,4q,55,5w,6v,7f,7w,8t,9,bb,bv,cd,cg,cq,cs,dg,di,dk,e,fs,fz,g0,ge,hs,ht,l,q
+17,1p,1v,32,33,36,3l,4q,55,5w,6v,7f,7p,7w,8t,9,ak,bb,bv,cd,cg,cq,cs,d0,dg,di,dk,e,e5,ea,fm,fs,fz,g0,gg,hs,ht,l,q
+1o,1r,20,2j,2q,36,3l,4q,6v,6y,7f,7p,8x,9x,bn,bv,bw,bx,by,c5,cg,ch,cl,cn,co,cq,cs,dk,fs,fz,g0,g4,g9,h3,hn,hs,ht,i4,q
+1o,1r,20,2j,2q,36,3l,46,4q,6v,6y,7f,7p,8x,9x,bn,bv,bw,bx,by,c5,cg,ch,cl,cn,co,cq,cs,dk,e4,f7,f9,fs,fz,g0,g4,g9,h3,hn,hs,ht,i4,q
+1o,1r,20,2j,2q,36,3l,46,4q,4u,5e,5m,5t,6v,6y,7f,7p,84,8m,8x,9c,9x,au,bn,bv,bw,bx,by,c5,cg,ch,cl,cn,co,cq,cs,dk,e4,et,f7,f9,fs,fu,fz,g0,g4,g9,h3,hn,hs,ht,i4,q
+1o,1p,2b,36,3l,4q,4u,5i,5k,5m,6z,7f,7p,84,8c,8y,a2,au,bc,bv,cg,cq,cs,d0,df,dk,e,ej,ek,fb,fs,fu,fz,g0,g9,gc,ge,hn,hs,ht,w
+1d,23,24,36,3a,3k,3l,4f,4j,4q,7f,86,89,8x,99,a5,a6,bv,cg,cn,co,cq,cs,dk,dx,dz,f,fs,fu,g0,g4,ga,gt,gu,h3,hj,i4,q
+1d,23,24,36,3a,3k,3l,4f,4j,4q,7f,86,89,8x,99,a5,a6,bv,cg,cn,co,cq,cs,dk,dx,dz,et,f,fs,fu,fz,g0,g4,ga,gt,gu,h3,hj,i4,q
+1d,1q,1r,23,2j,36,3k,3l,4f,4k,4q,5h,6v,7f,7p,89,8x,bv,cg,cn,cq,cs,dk,dx,dz,ex,f,f7,fs,fy,fz,g0,ge,gu,hj,hn,hs,ht,i4,q
+1d,1q,1r,23,2j,36,3k,3l,4f,4k,4q,5h,6v,7f,7p,89,8x,bv,cg,cn,cq,cs,dk,dx,dz,ex,f,f3,f7,fg,fs,fy,fz,g0,g1,ge,gp,gu,hj,hn,hs,ht,i4,q
+14,1q,1r,36,3l,4q,6n,6v,7f,bv,c7,cg,cq,cs,dk,fs,fz,g0,hq,hs,ht
+14,1o,1q,1r,3,36,3l,3v,41,43,4q,6e,6n,6v,7f,7p,8c,9k,bv,c7,cg,cq,cs,dk,dm,eq,f,fs,fz,g0,hq,hs,ht,q
+14,1o,1q,1r,3,36,3l,3v,3x,40,41,43,49,4q,6e,6n,6v,7f,7p,8c,9k,bv,c7,cg,cq,cs,dk,dm,eq,f,fm,fs,fz,g0,hq,hs,ht,q
+0,1o,1q,1r,3,36,3l,4q,4r,6e,6k,6v,7f,8s,9b,9k,bs,bv,c7,cg,cl,cn,cq,cs,dk,et,fs,fu,fz,g0,g8,hq,hs,ht,hv,q
+0,1o,1q,1r,3,36,3l,4q,4r,6e,6k,6v,7f,8s,9b,9k,bs,bv,c7,cg,cl,cn,cq,cs,dk,et,fs,fu,fz,g0,g8,hq,hs,ht,hv,q
+0,1o,1q,1r,1v,3,36,3l,4q,4r,6e,6k,6v,7f,8s,8y,9b,9k,bn,bs,bv,c7,cg,cl,cn,cq,cs,d0,dk,et,fs,fu,fz,g0,g8,hq,hr,hs,ht,hv,q
+14,2u,36,4q,6c,6v,6y,7d,7f,9o,9z,aa,av,bc,bv,bx,c7,cg,cl,cn,co,cq,cs,d0,db,dk,eq,fm,fs,g0,gg,gz,hq,hs,y
+14,1d,1v,2u,2z,36,3r,4q,5w,5z,7f,7g,84,8c,91,9l,au,bv,cg,cq,cs,cx,d0,de,dk,fh,fm,fs,fu,fx,g0,g9,y
+14,1d,1p,1v,2u,2z,36,3r,4q,5w,5z,7c,7f,7g,84,8a,8b,8c,8e,91,9l,9q,au,ay,bv,cg,cq,cs,cx,d0,de,dk,dw,fh,fm,fs,fu,fx,g0,g9,y
+1,1s,1v,2e,2z,36,3h,4c,4q,5h,7f,86,8c,a8,a9,aa,ab,bn,bv,cq,cs,cy,d0,d1,d8,de,dk,fs,fu,g0,g9
+1,1s,1v,2e,2u,2z,32,36,37,3g,3h,48,4q,5h,70,7f,81,86,8c,8f,8k,a8,a9,aa,ab,bg,bn,bv,cq,cs,cx,cy,d0,d1,d8,de,dk,et,fm,fs,fu,g0,g9,hx
+1d,1v,23,36,37,3h,48,4p,4q,69,7f,8x,ab,ar,bv,cg,cq,cs,d0,dc,dk,fs,fu,fy,g0,gp,gs,gt,gu,gv,hj,ia
+1d,1v,23,2u,2z,36,37,3h,48,4p,4q,69,7f,8c,8k,8x,ab,ar,bv,cg,cq,cs,cx,d0,dc,dk,dm,fm,fs,fu,fy,g0,gp,gs,gt,gu,gv,hj,ia
+17,1x,32,33,36,37,3x,3z,43,49,4q,7f,7n,7r,84,87,8s,9b,at,bc,bs,bv,cq,cs,dk,dl,el,et,fs,fu,g0,g3,h9,hg,i8
+10,1v,2u,2z,32,36,37,3h,44,49,4q,50,56,5p,5v,7f,92,a8,ab,ae,bc,bd,bf,bv,c7,c8,cg,cq,cs,ct,cx,d0,dk,dm,ee,em,en,fm,fs,ft,fu,g0,gg,gz,hf,m
+10,1v,2u,2z,32,36,37,3h,44,49,4q,50,56,5p,5v,7f,92,a8,ab,ae,bc,bd,bf,bv,c7,c8,cg,cq,cs,ct,cx,d0,dk,dm,ee,em,en,fm,fs,ft,fu,g0,gg,gz,hf,m
+2u,32,36,37,3h,49,4q,7f,86,8f,8g,a7,bc,bi,bv,bx,cg,cq,cs,d0,dk,dm,ds,e0,fo,fp,fs,fu,g0
+1t,2u,32,36,37,3h,49,4q,68,7f,86,8f,8g,8k,a7,b4,bc,bi,bv,bx,c7,cg,cq,cs,d0,d4,dk,dm,do,dr,ds,dz,e0,f4,fm,fo,fp,fs,fu,g0
+1p,1t,1v,2u,32,36,37,3h,49,4q,5t,68,7,7f,86,8f,8g,8k,96,a7,b4,bc,bi,bv,bx,c7,cg,cq,cs,cx,d0,d4,dk,dm,do,dr,ds,dz,e0,ea,f4,fm,fn,fo,fp,fs,fu,g0,ht,ib
+0,16,2l,32,36,37,4q,4s,6e,6k,6n,7f,86,87,8j,9b,9k,af,bc,be,bs,bv,bx,c7,cn,cq,cs,d,dk,e9,eb,et,fq,fs,fu,g0,gw,hg,ia
+0,16,2l,32,36,37,4q,4s,6e,6k,6n,7f,86,87,8j,9b,9k,af,bc,be,bs,bv,bx,c7,cn,cq,cs,d,d0,dk,e9,eb,et,fq,fs,fu,g0,gw,hg,i4,ia
+0,16,2l,32,36,37,46,4q,4s,6e,6k,6n,7e,7f,86,87,8j,9b,9k,af,aj,bc,be,bs,bv,bx,c7,cn,cq,cs,d0,dk,e9,eb,en,et,fq,fs,fu,g0,gw,hg,i4,ia
+0,16,1b,1p,1v,2l,32,36,37,4q,4s,6e,6k,6n,7f,86,87,8j,9b,9k,af,bc,be,bs,bv,bx,c7,cn,cq,cs,d,d0,dk,e9,eb,et,fm,fq,fs,fu,g0,gw,hg,i4,ia
+16,1d,20,2u,2z,32,36,37,3h,3m,4q,55,56,62,69,7f,84,8c,8u,99,bv,bw,bx,cg,co,cq,cs,d,d0,dh,di,dk,dm,dq,ds,e4,ea,en,et,fm,fs,ft,fu,g0,g7,gc,gm,h3,i4,m,q
+15,19,1n,1p,1x,27,2c,2u,2z,36,37,3h,49,4q,55,5x,67,7,7f,7j,8f,8t,9n,ak,b7,bv,cg,cq,cs,cu,cx,d0,dk,dm,fm,fs,fu,g0,g6,g9,gn,h
+36,37,4q,6i,6j,7d,7f,87,8o,8p,8s,9b,bs,bv,bx,c7,cn,cq,cs,d7,dk,et,fs,fu,g0,hg,i8,y
+19,2u,36,37,47,4q,54,5t,6i,6j,7d,7f,87,8k,8o,8p,8s,9b,a,b,bs,bv,bx,c7,cn,cq,cs,d7,dk,et,fs,fu,g0,hg,hw,i1,i8,y
+10,14,1p,2,36,4,4q,6c,6e,6s,7f,86,9k,ac,bc,bv,c7,cg,cq,cs,dk,ed,ee,ef,et,f3,fg,fs,fu,fz,g0,g1,he
+17,1p,1u,1v,2u,2z,32,33,36,37,3h,3l,44,4c,4q,7f,7m,86,87,9f,ab,ac,ah,bc,bs,bv,c7,cg,cq,cs,cx,d0,de,dg,dk,dm,eb,eq,et,fm,fs,fu,fz,g0,hg,hl
+19,1j,1o,1y,2j,36,4q,4u,5e,5h,6t,7a,7f,7o,84,au,bc,bv,c,cn,cq,cs,df,dj,dk,ek,fs,fu,fy,g0,gd,i0,m
+19,1j,1o,1y,2j,36,4q,4u,5e,5h,5t,6t,7a,7f,7o,84,au,bc,bv,c,cn,cq,cs,df,dj,dk,ek,et,fs,fu,fy,fz,g0,gd,ht,i0,m
+19,1d,1j,1o,1y,2j,36,46,4q,4u,5e,5h,5t,6o,6t,7a,7f,7o,84,8x,au,bc,bi,bv,c,cn,cq,cs,df,dj,dk,do,dp,ek,et,fs,fu,fy,fz,g0,gd,ht,i0,m
+1v,2u,2z,32,36,37,3h,3u,42,43,4g,4q,7f,7j,7k,7n,84,8c,8u,9n,at,bv,cg,cq,cs,cv,d0,dk,dv,f0,fk,fm,fs,fu,g0,ge,h9,i3,w
+1v,2u,2z,32,36,37,3h,3u,42,43,49,4g,4q,7f,7j,7k,7n,84,8c,8u,9n,at,bv,cg,cq,cs,cv,d0,dk,dv,f0,fk,fm,fs,fu,g0,ge,h9,i3,w
+10,1d,2b,32,36,3e,4q,4u,6u,6z,7f,84,86,9o,au,bc,bv,c7,cg,co,cq,cs,dk,dn,ed,ee,ej,ek,ff,fs,fu,g0,g9,h0,h3,l
+10,1d,1p,2b,32,36,3e,3q,4q,4u,6u,6z,7a,7f,84,86,9o,au,bc,bv,c7,cg,co,cq,cs,dk,dn,ed,ee,ej,ek,ff,fs,fu,g0,g9,h0,h3,l
+1c,1v,2b,2z,32,36,3h,4n,4q,5b,6c,6z,7f,84,8c,8t,a8,aa,ab,au,bb,bc,bv,c7,cq,cs,d,d0,dk,ej,ek,fm,fs,fu,g0,hf
+1c,1p,1v,2b,2z,32,36,3h,4b,4n,4q,5b,6c,6z,7f,84,8c,8t,a8,aa,ab,au,bb,bc,bv,c7,cq,cs,cx,d,d0,dk,ej,ek,et,f3,fg,fm,fs,fu,g0,g1,hf
+1c,1p,1v,2b,2z,32,36,3h,3l,4b,4n,4q,4u,5a,5b,5g,5l,66,6c,6z,7f,84,8c,8t,a8,aa,ab,au,bb,bc,bv,c7,cq,cs,cx,d,d0,dk,ej,ek,et,f3,fg,fm,fs,fu,g0,g1,hf
+1p,1v,2b,2u,36,37,3u,4q,4u,5j,5k,5m,6z,79,7a,7f,84,ar,au,br,bv,c,cq,cs,cx,d0,df,dk,ek,et,fi,fm,fs,fu,g0,ge,i7
+18,19,2u,36,37,3d,3f,49,4q,5,5j,5k,5m,5t,5u,5w,7f,7h,84,8g,8t,a7,au,bv,cq,cs,d0,dk,dm,e7,et,eu,fm,fs,fu,g0,hd,i1
+18,19,2u,36,37,3d,3f,49,4q,5,52,5j,5k,5m,5t,5u,5w,7f,7h,84,8g,8k,8t,a7,au,bv,cq,cs,d0,dk,dm,e7,et,eu,fm,fs,fu,g0,hd,i1
+11,2u,2z,36,3h,4q,4x,5b,5d,5m,71,7f,84,au,bv,cd,cq,cs,d0,d6,dk,en,et,fm,fs,fu,fx,g0,g9,gg,gn,i7
+11,1p,1v,2u,2z,36,3h,4q,4x,5b,5d,5m,6x,71,7f,84,8k,au,bv,cd,cq,cs,cx,d0,d6,dk,en,et,fm,fs,fu,fx,g0,g9,gg,gn,i7
+1d,36,4q,4u,5o,6u,6y,7f,87,8a,8b,9b,9r,a1,az,b7,bv,cq,cs,cx,d0,d6,dk,dn,et,fs,fu,g0,g9
+1d,1p,1v,2z,32,36,37,4q,4u,5o,6u,6y,7f,87,8a,8b,8c,9b,9r,a1,az,b7,bs,bv,cq,cs,cx,d0,d6,de,dk,dn,et,fm,fs,fu,g0,g9
+1d,2z,32,36,37,3l,4q,4u,57,5o,6y,7f,81,86,8a,a1,bc,bf,bv,bx,c7,cg,cq,cs,d0,de,dk,dn,ed,ef,en,f0,f1,fs,fu,g0,h0,hf,hj
+1d,2z,32,36,37,3l,4q,4u,57,5o,6y,7f,81,86,8a,8c,8k,a1,bc,bf,bv,bx,c7,cg,cq,cs,d0,de,dk,dn,ed,ef,en,f0,f1,fs,fu,fz,g0,h0,hf,hj
+1,19,1m,1v,2f,2z,36,3z,41,42,49,4m,4q,7f,81,ay,bv,cq,cs,cy,cz,d0,d1,d2,de,dg,dk,eg,fa,fj,fs,fu,g0,h9,i1
+1,19,1m,1p,1v,2f,2u,2z,32,36,37,3h,3x,3z,41,42,49,4m,4q,5t,7f,81,8c,ay,bv,cq,cs,cx,cy,cz,d0,d1,d2,de,dg,dk,dm,eg,fa,fj,fm,fs,fu,g0,h9,ht,i1
+2,21,25,2e,32,36,3v,4,40,49,4q,4s,62,6g,7f,83,8c,bb,bc,bv,bx,c7,cg,cp,cq,cs,dk,dm,ef,fs,fu,g0,h9,he,hf,i9,u,y
+1p,2,21,25,2e,32,36,37,3v,4,40,49,4q,4s,62,6g,7f,83,8c,bb,bc,bv,bx,c7,cg,cp,cq,cs,d0,dk,dm,ef,fs,fu,g0,h9,he,hf,i9,u,y
+1p,1v,2,21,25,2a,2e,32,36,37,3v,4,40,49,4q,4s,62,6g,7f,83,8c,8k,bb,bc,bv,bx,c7,cg,cp,cq,cs,cx,d0,dk,dm,ef,fm,fs,fu,g0,gz,h9,he,hf,ht,i9,u,y
+1v,2b,2z,36,3h,4n,4q,4t,4u,7f,84,8m,9c,a8,au,bc,bn,bv,cq,cs,cw,d,d0,de,dk,dn,eg,ej,ek,et,fa,fj,fs,fu,g0,gf
+1p,1v,2b,2z,36,3h,4n,4q,4t,4u,7f,84,8m,9c,a8,au,bc,bn,bv,cq,cs,cw,d,d0,de,dk,dn,eg,ej,ek,et,fa,fj,fm,fs,fu,g0,gf
+1d,23,25,2m,2n,36,39,3k,4q,4s,4u,7f,86,8c,8x,99,9e,ae,ao,aw,ay,bu,bv,bx,cg,cm,cn,co,cq,cs,dk,dt,em,en,fs,fu,g0,gt,gy,h3,hj,hy,id
+19,1d,2j,36,37,3a,3i,3t,46,4q,5n,5o,69,7e,7f,81,8k,8t,8x,ae,aj,b4,bi,bv,bx,cn,co,cq,cs,di,dk,do,ds,e4,en,et,f7,fs,fu,g0,h3,i4,m,q
+17,1v,27,2u,2z,36,3h,4g,4h,4q,6m,70,7f,81,bk,bv,cd,cg,cq,cs,cw,cx,d,d0,d1,d3,de,dk,es,et,fa,fm,fs,fu,fz,g0,ge,i3
+17,19,1l,1p,1v,2u,2z,33,36,37,3v,3w,3x,41,43,4q,54,7,70,7f,84,8c,am,at,bv,cg,cq,cs,cv,cx,d,de,dg,dk,fm,fs,fu,g0,gn
+1a,2j,2u,32,34,36,37,3h,4q,55,69,6v,7f,7i,7n,7w,81,8c,ak,bm,bv,bx,c9,cg,cn,cq,cr,cs,d0,db,dh,di,dk,dm,ea,en,fm,fs,fz,g0,gc,q,t,y
+1a,2j,2u,32,34,36,37,3h,4q,55,69,6v,7f,7i,7n,7w,7y,81,8c,8k,ak,bm,bv,bx,c9,cg,cn,cq,cr,cs,cx,d0,db,dh,di,dk,dm,ea,en,fm,fs,fz,g0,gc,q,t,y
+17,1a,33,36,3t,4q,64,6v,71,7f,7w,7z,81,82,8t,8x,bm,bv,cg,cq,cs,dk,fs,g0,q
+17,1a,1p,1v,2z,33,35,36,3t,4q,4u,63,64,6v,71,7f,7w,7z,81,82,8k,8t,8x,bm,bv,cg,cq,cs,d0,dk,du,fm,fs,g0,q
+1a,21,2j,36,3e,3t,45,46,4q,6v,7f,7z,81,82,8k,8t,8x,as,bi,bm,bv,bx,cg,cn,cq,cs,dk,do,fs,g0,hl,i0,i4,m,q
+1a,2z,36,3h,4q,63,6v,7f,7u,7v,81,8a,8c,bm,bv,cg,ch,cq,cs,d0,d6,dk,du,fs,g0,g9,i3,q,s,t
+1a,1v,2z,36,3h,4q,4u,63,6v,7f,7u,7v,81,8a,8c,bm,bv,cg,ch,cq,cs,cx,d0,d6,dk,du,fm,fs,fz,g0,g9,i3,q,s,t
+1a,1d,1v,2u,36,3r,3u,4q,6m,6v,7f,7j,7l,80,81,82,8c,8e,9n,ar,bm,bv,cg,cq,cs,d0,dk,fh,fm,fs,g0,g9,ge,q
+1a,1d,1p,1v,2u,36,37,3r,3u,4q,6m,6v,7f,7j,7l,80,81,82,8c,8e,8k,9n,ar,bm,bv,cg,cq,cs,cx,d0,dk,fh,fm,fs,g0,g9,ge,q
+1d,1j,1p,1v,2u,2z,36,3h,3u,4q,67,6y,7f,7j,7l,81,84,8a,8b,8c,8e,8k,8t,9n,bv,cg,cq,cs,cx,d0,de,dg,di,dk,e5,eh,et,fh,fm,fs,fu,g0,ge,gu,hj
+13,1a,2j,2r,36,3h,4q,4s,5o,6v,71,72,7f,7w,81,82,8b,8c,93,9s,a2,ay,b5,b9,bm,bv,cg,cn,cq,cs,cx,d0,de,di,dk,eh,fs,fy,g0,g7,q,r,y
+2u,36,3f,46,49,4q,59,5v,61,7f,7t,91,9j,9w,aj,al,bk,bv,bx,cb,cg,cn,cq,cs,d0,dk,dm,fh,fm,fs,fu,g0,hd,hl,i4,p,y
+2u,36,37,3f,46,49,4q,59,5v,61,7f,7t,8k,91,9j,9w,aj,al,bk,bv,bx,cb,cg,cn,cq,cs,cx,d0,dk,dm,fh,fm,fs,fu,g0,hd,hl,i4,p,y
+1v,25,2u,2v,2z,36,37,3h,4q,4s,51,56,5q,69,7f,7g,81,8u,ay,b8,bv,cg,cq,cs,d0,dh,dk,dm,ea,ep,fm,fs,fu,g0,g3,gn,u
+1p,1v,2u,2v,2z,32,36,37,3h,4q,4s,51,56,5q,69,6x,7f,7g,81,8k,8t,8u,ay,b8,bv,cg,cq,cs,cx,d0,dg,dh,dk,dm,ea,ep,fm,fs,fu,g0,g3,gn
+2u,36,37,3h,4m,4q,51,56,62,69,7f,83,84,8t,9,ae,ai,ay,bv,bx,c6,c8,cg,co,cq,cs,dg,dh,dk,en,fs,fu,g0,gg,gy
+1p,2u,30,32,36,37,3h,4m,4q,51,56,62,69,7f,7i,83,84,8t,9,ae,ai,ak,ay,bv,bx,c6,c8,cg,co,cq,cs,cx,d0,dg,dh,dk,en,fs,fu,g0,gg,gy,ha
+16,19,1p,1u,1v,28,2u,2z,36,3h,42,49,4q,4s,55,7f,84,8c,8g,9m,ar,at,bt,bv,bx,c8,cg,cq,cs,cx,d0,dk,dm,e7,fl,fm,fr,fs,fu,g0,gg,hi,hx,ia
+16,19,1n,1p,1s,2u,2z,32,36,37,3h,3q,4q,5w,6r,6y,7f,8f,bv,cg,cq,cs,ct,cx,d0,dk,dm,fl,fm,fr,fs,fu,fx,g0,g6,gn,hh,hi,ib
+15,16,19,1n,1p,1s,1v,2u,2z,32,36,37,3h,3q,4q,5w,6r,6y,7f,8b,8f,9r,bv,cg,cq,cs,ct,cx,d0,de,dk,dm,fl,fm,fr,fs,fu,fx,g0,g6,gn,hh,hi,ib
+1p,1s,2u,2w,32,34,36,37,3h,4q,4s,5f,6,6r,6y,7f,86,8f,96,9r,bv,c8,cg,cq,cs,d0,dg,dk,dm,ez,fe,fm,fo,fs,fu,g0,ha,hh,ib,y
+2k,36,38,3e,3i,46,4q,4s,6o,6w,7e,7f,86,8r,8x,9o,aj,as,av,bc,bi,bv,bx,by,cg,cn,co,cq,cs,dk,e4,en,ew,f4,fs,fu,g0,i0,i4,y
+1c,2j,32,36,3e,3i,44,46,4q,4s,6o,7f,86,8r,8x,9o,aj,av,b4,bc,bi,bv,bx,cg,cn,co,cq,cs,dk,dr,e4,en,ew,f4,f5,fh,fm,fn,fs,fu,g0,i4,y
+1s,1t,1v,2r,32,36,37,3h,4b,4q,4s,7f,86,8f,8r,a9,ab,ai,bc,be,bl,bv,c7,cq,cs,d0,dc,de,dk,e0,eb,et,fo,fs,fu,g0,y
+1p,1s,1t,1v,2r,32,36,37,3h,4b,4q,4s,7f,86,8f,8r,a5,a9,ab,ai,bc,be,bh,bl,bv,c7,cc,cq,cs,d0,dc,de,dk,e0,eb,et,fm,fo,fs,fu,g0,y
+1d,2j,36,46,4q,6m,6o,7e,7f,9b,9i,av,az,b1,bc,bi,bn,bv,bw,bx,c5,c7,cg,co,cq,cs,dk,do,e4,en,f4,fs,fu,g0,i4,m
+1d,2j,36,46,4q,6m,6o,7e,7f,93,9b,9i,ad,av,az,b1,b4,bc,bi,bn,bv,bw,bx,c5,c7,cg,co,cq,cs,dk,do,e4,en,f4,fs,fu,g0,i4,m
+1v,27,2u,2z,36,37,3h,4q,4s,57,6,67,7f,7j,81,84,8b,8c,8k,8t,9n,9r,9s,bv,cg,cq,cs,d0,de,di,dk,eh,fm,fs,fu,g0,g6,gg
+1v,27,2a,2u,2z,36,37,3h,4q,4s,57,6,67,7c,7f,7j,81,84,8b,8c,8k,8t,95,9n,9r,9s,bv,cg,cq,cs,cx,d0,de,di,dk,dm,eh,fm,fr,fs,fu,fx,g0,g6,gg
+1w,2c,2u,36,3e,46,4d,4q,59,5y,60,7f,84,9i,bi,bv,bx,ce,cg,cq,cs,ct,cu,d0,dk,dr,ds,ew,fs,fu,g0,hd,m,p
+1w,2c,2u,36,3e,46,4d,4q,59,5y,60,7f,84,8k,9i,bi,bv,bx,ce,cg,cq,cs,ct,cu,d0,dk,dm,dr,ds,ew,fm,fs,fu,g0,hd,m,p
+19,2b,32,36,3v,47,4q,5o,6g,6m,7f,84,8c,9r,b0,ba,bc,bv,c7,cg,co,cq,cs,dk,ej,en,fd,ff,fs,fu,g0,gz
+19,1i,2b,32,36,37,3v,47,4q,5o,5t,6g,6m,7f,7s,84,8c,8k,9r,9s,b0,b1,ba,bc,bv,c7,cg,co,cq,cs,de,dk,ej,en,fd,ff,fs,fu,g0,gz
+19,1i,2b,32,36,37,3v,42,43,47,49,4q,5o,5t,6g,6m,7f,7s,84,8c,8k,9r,9s,at,b0,b1,ba,bc,bv,c7,cg,co,cq,cs,cx,d0,de,dk,ej,en,fd,ff,fm,fs,fu,g0,gz,h0
+2u,36,37,46,4q,4u,6u,7f,83,8a,8b,8c,8i,9r,9s,a1,aj,ak,bi,bv,cg,cn,cq,cs,da,de,dk,dq,en,f4,fu,g0,g6,m,s
+19,1a,2u,32,36,37,46,4q,69,6g,6o,6v,6z,7e,7f,7i,7t,7z,81,82,8k,8t,aj,ak,al,as,bi,bm,bv,bx,c5,c6,cn,cq,cs,cx,d0,dk,du,en,f4,fs,g0,q,t
+1d,2i,2k,2q,2u,2w,34,36,37,3h,3l,3t,46,4q,4u,4v,7f,7v,81,84,8k,8z,9r,9s,9t,9z,au,bc,bv,bx,c1,c2,cg,cn,co,cq,cs,d0,de,dk,dm,dz,e4,et,fm,fs,fu,g0,gj,gk,h3,h5,hj,ht,i4,q,x,y
+1b,2u,31,32,36,37,49,4a,4q,6v,6x,7f,7n,7w,7x,7y,80,81,8g,98,bv,cg,cq,cs,d0,dk,dm,fm,fs,g0,q,r,t,y,z
+1b,1n,1p,1v,2u,2z,31,32,36,37,49,4a,4q,6v,6x,7f,7n,7w,7x,7y,80,81,8g,98,bv,cg,cq,cs,cx,d0,dk,dm,fm,fs,fz,g0,q,r,t,y,z
+1a,1v,2z,36,3h,4b,4q,5e,5z,6v,6z,7f,7z,81,82,a2,a8,a9,aa,ab,au,bv,c,cg,cn,cq,cs,cx,d0,db,de,dk,ek,fm,fs,g0,g9,q,r,y
+1d,2j,2z,36,39,46,4q,56,7e,7f,7t,9o,ae,aj,as,az,bc,bi,bv,bx,c7,c8,cg,co,cq,cs,dk,do,ds,e4,en,f4,fs,ft,fu,g0,h3
+17,1d,24,36,3k,3l,4i,4q,5n,6g,6v,6z,7f,7v,7w,81,8x,ao,bm,bv,cg,cn,cq,cs,dk,fs,fz,g0,gc,gr,gt,gv,hj,ht,i4,id,q
+17,1d,1i,1p,24,36,3k,3l,4i,4q,5n,6g,6v,6z,7f,7v,7w,81,8x,ao,bm,bv,cg,cn,cq,cs,dk,f3,fg,fs,fz,g0,g1,gc,gr,gt,gv,hj,ht,i4,id,q
+11,1d,1p,1v,23,2u,2z,36,37,3h,49,4q,4s,6m,7c,7f,8c,8j,8x,ao,ay,bv,cg,cq,cs,cx,d0,dk,dm,ei,ex,fl,fm,fr,fs,fu,g0,gp,gq,h,hi,hj,ht,hw,hy
+1v,2k,2q,2z,36,3a,46,4q,4u,6n,73,76,7f,8x,99,9b,a6,bk,bn,bv,bw,bx,by,c2,c7,cg,cn,cq,cs,d,d0,d1,de,dk,e4,et,fa,fm,fs,fu,g0,g4,i,i2,i4,q
+1v,2k,2q,2z,36,3a,46,4q,4u,6n,73,76,7f,8x,99,9b,a6,bk,bn,bv,bw,bx,by,c2,c7,cg,cn,cp,cq,cs,cx,d,d0,d1,de,dk,e4,et,fa,fm,fs,fu,g0,g4,h3,i,i2,i4,q
+1v,2k,2q,2z,36,3a,46,4q,4u,6n,73,76,7f,8x,99,9b,a6,bk,bn,bv,bw,bx,by,c2,c7,cg,cn,cp,cq,cs,cx,d,d0,d1,de,dk,e4,et,fa,fm,fs,fu,g0,g4,h3,i,i2,i4,q
+1d,25,2h,2k,2q,36,3a,3j,46,4q,4v,4y,7f,8x,9j,9w,a5,bi,bv,bx,c5,cg,cn,co,cq,cs,dk,e4,et,fs,fu,g0,h3,i4,q
+19,1d,25,2h,2k,2q,36,3a,3j,46,4q,4v,4y,7f,8x,9a,9j,9w,a5,bi,bv,bx,c0,c5,cg,cn,co,cq,cs,dk,e4,et,fs,fu,g0,h3,h5,hm,i4,i5,q
+19,1l,1p,1v,2c,2h,2u,36,47,4p,4q,5t,6,67,6f,7f,8k,8t,9i,9m,ay,b0,ba,bv,c8,cd,cg,cn,cq,cs,cx,d0,dk,dm,e6,eo,fm,fs,fu,g0,gn,h3
+17,19,1p,1v,27,2u,2z,32,33,34,36,37,3h,3w,41,43,49,4q,7f,7i,84,8c,8t,ak,at,bv,cg,cq,cs,ct,cx,d0,dg,dh,dk,dm,ea,en,fm,fs,fu,fx,fz,g0
+17,19,1g,1p,1v,27,2u,2z,32,33,34,36,37,3e,3h,3w,41,43,49,4q,5t,7f,7i,84,8c,8t,ak,at,b4,bi,bv,cg,cq,cs,cx,d0,dg,dh,dk,dm,dp,dq,ea,en,fm,fs,fu,fz,g0
+19,1l,2u,2z,36,37,47,4q,52,55,5t,67,7f,8a,8t,9,9r,9s,ak,b0,bv,cg,cq,cs,d0,dc,de,dk,ea,f1,fd,fs,fu,g0,i1,s
+1b,1d,1v,2z,36,3l,46,4f,4i,4q,4u,70,7f,81,8k,8x,aj,bn,bo,bq,bv,bx,c,c5,c7,cg,cl,cn,co,cq,cs,d0,d1,de,dk,dx,e4,e5,et,ey,fs,fu,fz,g0,gt,gv,h3,hj,i4,id,ie,x,y
+1d,2k,36,37,3h,3j,46,4i,4q,4r,6k,7f,8c,8k,9b,a3,a5,ag,ay,bv,bx,by,c0,ca,cg,cn,co,cq,cs,dk,et,fs,fu,g0,gl,gt,gv,h3,h7,hj,i4,q
+19,2j,36,3d,46,4q,5t,6t,7f,7o,a,aj,as,b,bc,bi,bv,bx,cg,ck,cn,co,cq,cs,dk,do,e4,en,fs,fu,g0,gd,hu,hw,i2,i4,m
+19,1d,2d,2j,36,3d,46,4q,5t,6t,7f,7o,a,aj,as,b,bc,bi,bv,bx,cg,ck,cn,co,cq,cs,dk,do,e4,en,fs,fu,g0,gd,hu,hw,i2,i4,m
+19,1d,2d,2j,36,3d,46,4q,5t,6t,7f,7o,a,aj,as,b,bc,bi,bv,bx,cg,ck,cn,co,cq,cs,dk,do,e4,en,et,fs,fu,g0,gd,ht,hu,hw,i2,i4,m
+17,1v,27,2z,33,36,39,3h,4c,4q,7f,7q,8c,8t,az,bv,cg,cq,cs,cz,d0,d1,de,dg,di,dk,fj,fm,fs,fu,g0,gn
+17,1v,27,2z,33,36,39,3h,4c,4q,7f,7q,8a,8c,8t,az,bv,cg,cq,cs,cz,d0,d1,de,dg,di,dk,fj,fm,fs,fu,g0,gn
+17,1p,1v,27,2u,2z,32,33,36,37,39,3h,49,4c,4q,5b,6f,7f,7q,7w,84,8a,8c,8t,az,bv,cg,cq,cs,cx,cz,d0,d1,de,dg,di,dk,dm,fi,fj,fm,fs,fu,fz,g0,gn,gr,q
+7f,ge
+1v,1w,2k,2z,36,37,4q,4u,7f,7q,8a,8x,9,9e,9r,9t,9y,bv,bx,by,c8,cg,cn,co,cq,cs,d0,de,dg,dk,fm,fs,fu,g0,ge,h3,ie
+1v,1w,2k,2z,36,37,4q,4u,6x,7f,7q,8a,8k,8x,9,9e,9r,9t,9y,bv,bx,by,c8,cg,cn,co,cq,cs,d0,de,dg,dk,fm,fs,fu,g0,ge,h3,ie
+17,19,36,46,49,4q,7e,7f,86,8z,9,bi,bv,ca,cq,cs,dk,fs,fu,g0,l,m,y
+17,19,1d,36,3l,3q,3u,3x,40,42,46,49,4q,5t,7e,7f,84,86,8l,8x,8z,9,b4,bi,bv,ca,cn,cq,cs,dk,fs,fu,fz,g0,ge,ha,l,m,y
+17,19,1d,36,3l,3q,3u,3v,3x,3y,40,42,46,49,4q,5t,7e,7f,84,86,8l,8x,8z,9,b4,bi,bv,ca,cn,cq,cs,dk,et,fs,ft,fu,fz,g0,ge,h3,ha,l,m,y
+1d,23,36,37,3a,3d,4q,4y,4z,6t,7f,7o,8x,a5,b9,bv,bx,cg,cn,cq,cs,dk,fs,fu,g0,hj,hw,i4,j
+19,1d,23,36,37,3a,3d,4f,4j,4q,4y,4z,5t,6t,7f,7o,8x,a5,aw,b9,bv,bx,cg,cn,cq,cs,dk,fs,fu,g0,gp,gv,hj,hw,i4,j
+19,1d,1e,23,36,37,3a,3d,4f,4j,4q,4y,4z,5t,6t,7f,7o,8x,a5,aw,b9,bv,bx,cg,cn,cq,cs,dk,dm,fm,fs,fu,g0,gp,gv,hj,hw,i4,j
+17,1o,1p,2j,33,36,37,3h,3l,4q,6o,6v,7e,7f,7j,7n,8c,8u,8y,ae,aj,b4,bi,bv,cg,cq,cs,cv,dg,dk,dp,e,en,fs,fz,g,g0,gy,ht,q
+17,1p,1v,25,2u,33,36,37,3h,3l,4q,4s,4y,59,5p,62,7f,7r,84,8c,8d,8k,ax,b8,b9,bv,bx,bz,cg,cn,cq,cs,ct,d0,dk,en,fm,fs,fu,fz,g0,gy,h7,ht,i4,z
+1p,21,2u,30,36,37,39,3o,46,4q,6o,73,7e,7f,81,84,8f,8k,9o,ae,aj,az,bc,bi,bv,bx,c6,c9,cg,cq,cs,ct,d0,dk,dm,do,en,f4,fm,fs,fu,g0,go,gy
+17,1o,1p,2j,33,36,38,39,3e,3l,46,4q,6v,7f,7p,7t,8r,a2,al,bv,bx,cg,co,cq,cs,di,dk,e,e4,en,eq,f,fs,fz,g,g0,hs,ht,q
+13,25,32,36,3c,3h,4q,4s,5h,7f,86,8r,90,b9,bc,bf,bv,c7,cg,cq,cs,dk,fo,fp,fs,fu,g0,o
+13,1p,1v,25,2u,32,33,36,3c,3h,4q,4s,56,5h,5w,6g,6r,7f,86,8c,8f,8k,8r,9n,at,bc,bf,bv,c7,cf,cg,cq,cs,cx,d0,dk,dq,fm,fo,fp,fs,fu,g0,gn
+36,37,3i,4q,5r,6t,7f,86,8o,8p,8q,8t,8x,9b,9w,9y,b3,bc,bk,bl,bv,bx,c7,cg,ci,cn,cq,cs,dk,dz,eb,et,fq,fs,fu,g0,g3,i,y
+32,36,37,3i,4q,5r,6t,7f,86,8c,8k,8o,8p,8q,8t,8x,9b,9w,9y,b3,bc,bk,bl,bv,bx,c7,cg,ci,cn,cq,cs,d0,dk,dz,eb,en,et,fq,fs,fu,g0,g3,i,y
+2u,32,36,37,3i,4q,5r,6t,7f,7m,86,8c,8k,8o,8p,8q,8t,8x,9b,9w,9y,b3,bc,bk,bl,bv,bx,c7,cg,ci,cn,cq,cs,d0,dk,dz,eb,en,eo,et,fq,fs,fu,g0,g3,i,y
+36,37,3h,4n,4q,5c,5k,5l,5m,5w,6m,7f,84,85,8c,8u,ar,au,av,ay,bv,c8,cq,cs,dg,dk,ek,et,fm,fs,fu,g0,g9,gg
+19,2u,36,37,3h,4n,4q,5c,5k,5l,5m,5w,6m,7f,84,85,8c,8u,ar,at,au,av,ay,bv,c8,cq,cs,d0,dg,dk,dm,ek,et,fm,fs,fu,g0,g9,gg,i1
+19,1p,1v,2u,36,37,3h,4n,4q,5c,5k,5l,5m,5t,5w,6m,7f,84,85,8c,8k,8u,ar,at,au,av,ay,bv,c8,cq,cs,cx,d0,dg,dk,dm,ek,et,fm,fs,fu,g0,g9,gg,i1
+14,1o,1v,29,2b,2w,2z,36,3l,4q,6v,7f,81,8a,8c,9q,9r,a2,bv,cg,cn,cq,cs,d0,df,dh,dk,dv,f0,fm,fs,fz,g0,hs,ht,i3,q
+14,1o,1v,29,2b,2w,2z,36,3l,4q,4u,6v,7f,81,84,8a,8c,9q,9r,a2,bc,bv,cg,cn,cq,cs,d0,df,dh,dk,dv,f0,fb,fm,fs,fz,g0,hs,ht,i3,q
+14,1o,1v,29,2b,2w,2z,36,3l,4b,4q,4u,6v,7f,81,84,8a,8c,9q,9r,a2,bc,bv,cg,cn,cq,cs,d0,df,dh,dk,dv,f0,fb,fm,fs,fz,g0,hs,ht,i3,q
+1d,2v,36,3h,3k,3t,4k,4p,4q,4s,7f,86,8c,8x,9,ao,ay,bv,ca,cg,cm,cn,cq,cs,dk,ex,fs,fu,g0,g9,gc,gp,gt,gu,gv,hj,hk,hy,i4,y
+1d,1p,2u,2v,36,3h,3k,3t,4i,4k,4p,4q,4s,7f,86,8c,8k,8x,9,ao,ay,bv,ca,cg,cm,cn,cq,cs,d0,dk,dm,ex,fm,fs,fu,fz,g0,g9,gc,gp,gt,gu,gv,hj,hk,hy,i4,y
+1d,1p,1v,2u,2v,2z,32,36,37,3h,3k,3t,4i,4k,4p,4q,4s,7f,86,8c,8k,8x,9,ao,ay,bv,ca,cg,cm,cn,cq,cs,cx,d0,dk,dm,ex,fm,fs,fu,fz,g0,g9,gc,gp,gt,gu,gv,hj,hk,hy,i4,y
+19,1d,1p,2u,32,36,37,3v,3x,41,42,43,49,4m,4q,4s,56,5t,62,7f,84,8c,8k,8t,97,9o,at,bc,bv,bx,c6,cg,ck,co,cq,cs,d0,dk,dm,ek,en,fm,fs,fu,g0,gy,h9,ht
+16,1d,1p,1v,20,2n,2u,2z,32,36,37,3h,49,4q,4w,56,6c,7f,81,84,8b,8c,8k,8u,8z,99,9q,9r,bc,bv,bx,c2,c7,cg,cl,co,cq,cs,cx,d0,dh,di,dk,dm,dq,ds,e4,ea,eh,en,et,fm,fs,ft,fu,g0,gm,h3,i4,m,q
+11,1b,1c,1p,1u,1v,2u,2z,36,37,3h,49,4a,4q,4s,5q,6f,71,7f,7n,9m,ay,br,bv,cd,cg,cq,cs,cx,d0,dk,dm,e5,e8,fm,fs,fu,fz,g0,gn,hb
+1p,1v,2u,2z,36,3h,4c,4q,4t,5g,70,7f,8c,bv,cg,cq,cs,cx,cz,d,d0,d3,dc,de,dk,eg,fa,fh,fi,fm,fs,fu,g0,gn,hx
+1o,1p,36,37,3l,3x,42,43,49,4q,6v,7f,7p,81,8a,8b,8c,8y,9s,at,bv,cg,cq,cs,dk,e,fs,fz,g,g0,h9,hs,ht,hv
+1d,23,24,2q,36,46,4q,4u,5o,5t,7f,8a,8k,8w,8x,8z,9t,bv,bx,by,c1,c5,cg,cn,co,cq,cs,dk,dm,e4,et,fk,fm,fs,fu,fx,g0,gu,h3,hj,i4,id,q
+19,1a,1t,36,37,3d,4q,5t,63,6v,7f,7v,7z,81,86,8f,8k,a2,bl,bm,bv,cc,cg,cn,cq,cs,cx,d0,dk,du,dz,e0,fm,fp,fs,fu,g0,q,r
+19,1d,1s,23,36,37,3k,4i,4j,4l,4q,5t,6v,7f,86,8f,8k,8x,96,9e,9n,bv,cc,cg,cn,cq,cs,cx,d0,dk,e0,ex,fm,fs,fu,g0,gt,gu,hj,hy,id
+19,1t,1y,36,37,4n,4q,58,5e,5l,5t,7a,7f,84,86,8f,8k,au,b7,bv,cc,cf,cg,cn,cq,cs,cx,d0,de,dk,dz,e0,ek,et,fm,fs,fu,g0,i0
+17,1a,1p,2u,33,36,37,4q,65,6v,7f,81,8c,8i,8k,am,an,av,bv,cg,cq,cv,cx,d0,dk,du,fm,fs,g0,gn,gp,q
+19,1d,2c,2u,2x,36,3f,49,4k,4q,4w,5,5t,7,7f,8k,8x,bv,bx,cg,co,cq,cs,d0,dk,dm,dx,fm,fs,fu,g0,gs,gu,ha,hj,ht,i4,y`;
+const MD=(()=>{const tc=Object.fromEntries(Object.entries(TY).map(([c,v])=>[v[0].toLowerCase(),c])),DMG=new Set(['dragon rage','electro ball','final gambit','grass knot','mirror coat','night shade','psywave','sheer cold','sonic boom','spit up','trump card','wring out']);
+ const rows=MVT.split('\n').map(l=>l.split('|')),moves={},learn={};
+ rows.forEach(([k,n,t,c,pw])=>{moves[k]=[n,tc[t]||'',c=='p'?'P':(+pw>0||DMG.has(k))?'S':'T']});
+ LSD.split('\n').forEach((l,i)=>{learn[i+1]=l?l.split(',').map(x=>rows[parseInt(x,36)][0]+':'):[]});
+ return{moves,learn}})(),MCAT={P:'Phys',S:'Spec',T:'Status'};
+function learn(p){if(!MD)return[];return(MD.learn[p.n]||[]).map(e=>{const i=e.indexOf(':'),id=e.slice(0,i),m=MD.moves[id]||[id,'','T'];return{id,name:m[0],ty:m[1],cat:m[2],src:e.slice(i+1)}})}
+function slots(p){const L=learn(p),a=mv[p.n]||[];return[0,1,2,3].map(i=>L.some(m=>m.id===a[i])?a[i]:'')}
+function offTypes(p){const sel=slots(p).filter(Boolean);if(!sel.length)return{types:p.ty,assumed:true};const L=learn(p);
+ return{types:[...new Set(sel.map(id=>L.find(m=>m.id===id)).filter(m=>m.cat!=='T'&&TY[m.ty]).map(m=>m.ty))],assumed:false}}
+function movesUI(p){if(!MD)return'<div class="mu">Move data not loaded</div>';const L=learn(p);if(!L.length)return'<div class="mu">No move data</div>';const sel=slots(p);
+ return sel.map((cur,i)=>`<select onchange="setMv(${p.n},${i},this.value)"><option value="">Move ${i+1}…</option>${L.filter(m=>m.id===cur||!sel.includes(m.id)).sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.id}"${cur===m.id?' selected':''}>${m.name} · ${TY[m.ty]?TY[m.ty][0]:'?'} · ${MCAT[m.cat]}${m.src?' · '+m.src:''}</option>`).join('')}</select>`).join('')}
 try{const s=JSON.parse(localStorage.getItem('mmteam')||'[]');if(Array.isArray(s))s.slice(0,6).forEach((x,i)=>team[i]=P[x-1]||null)}catch(e){}
 const tb=t=>`<span class="t" style="background:${TY[t][1]}">${TY[t][0]}</span>`;
 const spr=p=>`<img class="spr" src="https://dexdb.io/assets/monomyth/sprites/${p.slug}.png" alt="" loading="lazy" onerror="this.outerHTML='<div class=ini style=background:${TY[p.ty[0]][1]}>${p.name[0]}</div>'">`;
-function save(){try{localStorage.setItem('mmteam',JSON.stringify(team.filter(Boolean).map(p=>p.n)));localStorage.setItem('mmab',JSON.stringify(abil))}catch(e){}}
+function save(){try{localStorage.setItem('mmteam',JSON.stringify(team.filter(Boolean).map(p=>p.n)));localStorage.setItem('mmab',JSON.stringify(abil));localStorage.setItem('mmmv',JSON.stringify(mv))}catch(e){}}
 function render(){
  team=team.filter(Boolean).concat(team.filter(x=>!x).map(()=>null));
- $('team').innerHTML=team.map((p,i)=>p?`<div class="slot f"><button onclick="rm(${i})" title="Remove">×</button>${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div><div class="mu">BST ${p.bst}</div><select onchange="setAb(${p.n},this.value)"><option value="">${AB[p.n]?'Ability…':'No ability data'}</option>${(AB[p.n]||[]).map(a=>`<option${abil[p.n]==a?' selected':''}>${a}</option>`).join('')}</select></div>`:`<div class="slot"><div class="mu" style="margin-top:40px">Empty</div></div>`).join('');
+ $('team').innerHTML=team.map((p,i)=>p?`<div class="slot f"><button onclick="rm(${i})" title="Remove">×</button>${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div><div class="mu">BST ${p.bst}</div><select onchange="setAb(${p.n},this.value)"><option value="">${AB[p.n]?'Ability…':'No ability data'}</option>${(AB[p.n]||[]).map(a=>`<option${abil[p.n]==a?' selected':''}>${a}</option>`).join('')}</select>${movesUI(p)}</div>`:`<div class="slot"><div class="mu" style="margin-top:40px">Empty</div></div>`).join('');
  const mem=team.filter(Boolean);
  let h='<tr><th>Type</th>'+mem.map(p=>`<th>${p.name}</th>`).join('')+'<th>Weak</th><th>Resist</th></tr>';
  for(const a of K){const ms=mem.map(p=>memMult(a,p));const w=ms.filter(x=>x>1).length,r=ms.filter(x=>x<1).length;
   h+=`<tr><td>${tb(a)}</td>`+ms.map((x,j)=>`<td class="m${String(x).replace('.','')}${x!==mult(a,mem[j].ty)?' ab':''}">${x==1?'':x==0?'0':x==.5?'½':x==.25?'¼':'×'+x}</td>`).join('')+`<td class="${w>r?'bad':''}">${w||''}</td><td class="${r>w?'ok':''}">${r||''}</td></tr>`}
  $('def').innerHTML=mem.length?h:'<tr><td class="mu">Add Pokémon to see weaknesses and resistances.</td></tr>';
- const stab=[...new Set(mem.flatMap(p=>p.ty))];
+ const off=mem.map(p=>({p,...offTypes(p)}));const stab=[...new Set(off.flatMap(o=>o.types))];
  const hit=K.filter(d=>stab.some(a=>mult(a,[d])>1)),miss=K.filter(d=>!hit.includes(d));
- $('cov').innerHTML=mem.length?`<div class="mu">Hit super-effectively (${hit.length}/18):</div><div class="cov">${hit.map(tb).join('')}</div><div class="mu" style="margin-top:8px">Not covered:</div><div class="cov">${miss.map(tb).join('')||'<span class="ok">None, full coverage!</span>'}</div>`:'<div class="mu">Add Pokémon to see coverage.</div>';
+ $('cov').innerHTML=mem.length?`<div class="mu">Hit super-effectively (${hit.length}/18):</div><div class="cov">${hit.map(tb).join('')}</div><div class="mu" style="margin-top:8px">Not covered:</div><div class="cov">${miss.map(tb).join('')||'<span class="ok">None, full coverage!</span>'}</div><div class="mu" style="margin-top:8px">Attacking types by Pokémon (STAB assumed until you pick moves):</div>${off.map(o=>`<div class="cov" style="margin:2px 0"><b>${o.p.name}</b> ${o.types.map(tb).join('')||'<span class="mu">no damaging moves</span>'}${o.assumed?'<span class="mu">(own types)</span>':''}</div>`).join('')}`:'<div class="mu">Add Pokémon to see coverage.</div>';
  grid()}
 function grid(){
  const q=$('q').value.toLowerCase(),s=$('sort').value;
@@ -646,6 +1683,7 @@ function add(n){const p=P[n-1];if(team.includes(p))return;const i=team.indexOf(n
 function rm(i){team[i]=null;save();render()}
 $('clr').onclick=()=>{team=[null,null,null,null,null,null];save();render()};
 function setAb(n,v){abil[n]=v;save();render()}
+function setMv(n,i,v){const a=slots(P[n-1]);a[i]=v;mv[n]=a;save();render()}
 $('fx').onchange=render;
 $('q').oninput=grid;$('sort').onchange=grid;
 $('chips').innerHTML=K.map(t=>`<button class="t chip" data-t="${t}" style="background:${TY[t][1]}">${TY[t][0]}</button>`).join('');
