@@ -26,17 +26,19 @@ input,select{padding:7px 10px;border:1px solid var(--bd);border-radius:6px;backg
 .c{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:6px;text-align:center;cursor:pointer;font-size:12px}
 .c:hover{border-color:var(--ac)}.c.in{opacity:.4}
 .cov{display:flex;flex-wrap:wrap;gap:4px}
+.slot select{width:100%;margin-top:4px;font-size:12px;padding:3px}
+td.ab{outline:2px dashed #3b82f6;outline-offset:-2px}
 </style></head><body><main>
 <h1>Monomyth Team Planner</h1>
-<div class="mu">Plan a team of 6 from the 361 Pokémon in the Monomyth Emerald hack. Type-based only; abilities and movepools are not factored in. Data: <a href="https://dexdb.io/monomyth/" style="color:inherit">DexDB</a>.</div>
+<div class="mu">Plan a team of 6 from the 361 Pokémon in the Monomyth Emerald hack. Abilities only affect the defense table (common type-immunity and resist abilities); movepools are not factored in. Data: <a href="https://dexdb.io/monomyth/" style="color:inherit">DexDB</a>.</div>
 <h2>Your team</h2><div class="team" id="team"></div>
-<h2>Defense</h2><div class="scroll"><table id="def"></table></div>
+<h2>Defense <label class="mu" style="font-weight:400"><input type="checkbox" id="fx" checked> apply ability effects (dashed = changed by ability)</label></h2><div class="scroll"><table id="def"></table></div>
 <h2>Offense (STAB type coverage)</h2><div id="cov"></div>
 <h2>Pick a Pokémon</h2>
 <div class="bar"><input id="q" placeholder="Search name…"><select id="sort"><option value="n">No.</option><option value="a">Name</option><option value="b">BST</option></select><button id="clr" style="padding:7px 10px">Clear team</button></div>
 <div class="bar" id="chips"></div><div class="mu" id="cnt"></div>
 <div class="grid" id="grid"></div>
-<p class="mu">Sprites load from dexdb.io. Monomyth is a fan game by Team Monomyth; this is an unofficial fan tool. Spoilers: the Pokédex reveals the hack's new Pokémon.</p>
+<p class="mu">Sprites load from dexdb.io. Ability lists come from monomythwiki.com (game v1.0) and may differ from later versions. Monomyth is a fan game by Team Monomyth; this is an unofficial fan tool. Spoilers: the Pokédex reveals the hack's new Pokémon.</p>
 </main>
 <script>
 const RAW=`Marmroot Gr 320
@@ -408,18 +410,227 @@ const P=RAW.split('\n').map((l,i)=>{const m=l.match(/^(.*) (\w+) (\d+)$/);return
  slug:m[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss').replace(/’/g,'').replace(/&/g,'-').replace(/ /g,'-').toLowerCase()}});
 function mult(a,d){const[s,v,z]=CH[a].split('/').map(x=>x?x.match(/../g):[]);let r=1;for(const t of d){if(z.includes(t))r=0;else if(s.includes(t))r*=2;else if(v.includes(t))r*=.5}return r}
 const $=id=>document.getElementById(id);
-let team=[null,null,null,null,null,null],filt=new Set();
+let team=[null,null,null,null,null,null],filt=new Set(),abil={};
+try{abil=JSON.parse(localStorage.getItem('mmab')||'{}')||{}}catch(e){}
+const ABL=`Adaptability,Aftermath,Air Lock,Alchemist,Analytic,Anger Point,Anticipation,Arena Trap,Aroma Veil,Backshift,Bad Dreams,Battle Armor,Berserk,Big Pecks,Bladed,Blaze,Bulletproof,Cheek Pouch,Chlorophyll,Clear Body,Cloud Nine,Color Change,Compaction,Competitive,Compound Eyes,Corrosion,Cursed Body,Cute Charm,Damp,Dazzling,Defeatist,Defiant,Desert Curse,Download,Drizzle,Drought,Dry Skin,Early Bird,Effect Spore,Electric Surge,Filter,Flame Body,Flare Boost,Flash Fire,Flower Veil,Fluffy,Forewarn,Forgery,Friend Guard,Frisk,Fur Coat,Galvanize,Gluttony,Gooey,Grass Pelt,Grassy Surge,Guts,Harvest,Healer,Heatproof,Heavy Metal,Honey Gather,Hue Shift,Hustle,Hydration,Hyper Cutter,Ice Body,Igloo,Illuminate,Illusion,Immunity,Imposter,Infiltrator,Innards Out,Inner Focus,Insomnia,Intimidate,Iron Barbs,Iron Fist,Justified,Keen Eye,Klutz,Leaf Guard,Levitate,Light Metal,Lightning Rod,Limber,Liquid Ooze,Liquid Voice,Long Reach,Magic Bounce,Magic Guard,Magician,Magma Armor,Magnet Pull,Marvel Scale,Merciless,Misty Surge,Mold Breaker,Moody,Motor Drive,Moxie,Multicell,Multiscale,Natural Cure,Neuroforce,No Guard,Normalize,Oblivious,Overcoat,Overgrow,Own Tempo,Panacea,Parental Bond,Pickpocket,Pickup,Plated,Poison Heal,Poison Point,Poison Touch,Prankster,Pressure,Protean,Psychic Surge,Pure Power,Quick Feet,Rain Dish,Rattled,Recomposite,Refrigerate,Regenerator,Rivalry,Rock Head,Rough Skin,Run Away,Sand Force,Sand Rush,Sand Stream,Sand Veil,Sap Sipper,Scrappy,Serene Grace,Shadow Shield,Shadow Tag,Shed Skin,Sheer Force,Shell Armor,Shield Dust,Simple,Skill Link,Slush Rush,Sniper,Snow Cloak,Snow Warning,Solar Power,Solid Rock,Soundproof,Speed Boost,Stakeout,Stamina,Static,Steadfast,Steelworker,Stench,Sticky Hold,Storm Drain,Strong Jaw,Sturdy,Super Luck,Surge Surfer,Swarm,Sweet Veil,Swift Swim,Symbiosis,Synchronize,Tangled Feet,Tangling Hair,Technician,Telepathy,Terraincast,Thick Fat,Tinted Lens,Torrent,Tough Claws,Toxic Boost,Triage,Unaware,Unburden,Unnerve,Victory Star,Viral,Vital Spirit,Volt Absorb,Water Absorb,Water Bubble,Water Veil,Weak Armor,White Smoke,Wonder Skin,Zen Mode`.split(',');
+// Ability -> Pokémon that can have it (primary, secondary or hidden). Source: monomythwiki.com (game v1.0); form variants are folded into the base Pokémon.
+const AD=`Harvest=Exeggcute,Exeggutor,Tomtop,Upbrute
+Rain Dish=Polikazan,Pelagecko,Overgrove
+Hydration=Bellarva,Hydroskito,Bogrudge
+Shed Skin=Pupitar,Slithoom,Hadjinn,Scraggy,Scrafty,Tagling,Sinisign,Grafilthy,Scaypalm,Enekidna,Hairdyo,Monstria,Kabukin,Fuloderma
+Speed Boost=Carvanha,Sharpedo,Venipede,Whirlipede,Scolipede,Zilby,Tonsatuzi,Mayflyro
+Moody=Snorunt,Glalie
+Bad Dreams=Serenight,Barada,Nicto,Oarrove
+Solar Power=Sunflora,Pogonuva,Uvbeard,Ithaquil,Zakurade
+Healer=Spritzee,Aromatisse
+Terraincast=Elemink
+Dry Skin=Croagunk,Toxicroak,Acolith,Pogonuva,Uvbeard,Burincod,Capefrod,Monsmoke,Fumonster
+Volt Absorb=Kotora,Raitora,Chinchou,Lanturn,Volet,Jolet
+Water Absorb=Poliwag,Poliwhirl,Poliwrath,Politoed,Cacnea,Cacturne,Chinchou,Lanturn,Spawnge,Saturadon,Poriferex,Pelagecko,Overgrove,Drizloome
+Motor Drive=Magnevox,Volet,Jolet
+Lightning Rod=Ayotoglo,Doedicrush,Volet,Jolet,Petigao,Hyaligao,Korechu,Sorechu,Arechu
+Storm Drain=Shellos,Gastrodon,Cilozon,Corazoul
+Sap Sipper=Twinz,Girafarig,Gloslug,Sacosap,Shimantle,Tomtop,Upbrute
+Flash Fire=Growlithe,Arcanine,Polikazan,Litwick,Lampent,Chandelure,Boomboom,Boombomb,Boombanite,Thatchoof,Puddipup
+Sand Force=Shellos,Gastrodon,Roggenrola,Boldore,Gigalith,Nosepass,Probopass
+Technician=Minccino,Cinccino,Pocozuna,Kokunai,Hirameken,Slizón
+Reckless=Leonte,Pollozaur,Cassowar,Süßchen,Zangdreiß,Reifgeißer
+Iron Fist=Draclobba
+Sheer Force=Trapinch,Druddigon,Darmanitan,Fincer,Enguardian,Pocozuna,Gorillaimo
+Rivalry=Albongo,Combee
+Analytic=Staryu,Starmie,Magnemite,Magneton,Magnezone,Alien Ogo,Argantim,Starmish
+Tough Claws=Pollozaur,Upbrute
+Strong Jaw=Chupalibre,Drawhide
+Bladed=Scorpel,Sharpion
+Steelworker=Scaribou,Quixotic
+Galvanize=Exegglint,Baskoil
+Refrigerate=Thatchoof
+Normalize=Khotel,Khobisst
+Swarm=Venipede,Whirlipede,Scolipede,Spinarak,Ariados,Joltik,Galvantula,Heracross,Khotel,Khobisst,Scaypalm,Gwubby,Grubbeast
+Torrent=Mishimizu,Coppeshu,Mishiarmor,Skalilla,Aangskal,Staalskal
+Blaze=Crackliss,Mokaboom,Explobra,Süßchen,Zangdreiß,Reifgeißer
+Overgrow=Marmroot,Thistlepig,Punxearth,Tusvind,Rollatul,Blomkappe
+Water Bubble=Bellarva,Hydroskito
+Water Veil=Bellarva,Hydroskito
+Magma Armor=Camerupt,Slugma,Magcargo,Sootling,Barbotite
+Limber=Ditto,Shope,Keratinger
+Immunity=Gligar,Gooslett,Intrecury
+Own Tempo=Numel,Balluna,Balonceo,Resonhare
+Oblivious=Numel,Caroot
+Insomnia=Spinarak,Ariados,Serenight,Obakid,Obakemono,Venggal
+Vital Spirit=Mankey,Primeape,Charriot,Fysover,Hartowar,Annihilape
+Sweet Veil=Sweeshell,Mollusweet,Snaptrap,Swirlix,Slurpuff
+Soundproof=Whismur,Loudred,Exploud,Obakid,Obakemono
+Leaf Guard=Tangela,Gelania,Tangrowth,Tangtrip,Till,Tusvind,Rollatul,Blomkappe
+Flower Veil=Kernut,Stalkern,Sunflora
+Justified=Growlithe,Arcanine,Puddipup,Draclobba
+Rattled=Whismur,Bonsly,Sudowoodo,Saigice,Scribix
+Compaction=Spawnge,Saturadon,Poriferex
+Stamina=Charriot,Riotgeare,Kajavaro
+Berserk=Druddighul,Binburtres
+Weak Armor=Slugma,Magcargo,Skarmory,Roggenrola,Boldore,Yokozira,Brekyasaur,Oviisaur,Joustorn,Icsule
+Cursed Body=Kurstraw,Pangshi,Froslass,Druddighul,Dreepy,Drakloak,Dragapult,Cilozon,Corazoul,Hoshigaze,Kodaismos,Dexcon,Popillit,Kabukin
+Anger Point=Camerupt,Mankey,Primeape,Albongo,Drawhide,Nautabyss
+Innards Out=Pyukumuku
+Illusion=Zorua,Zoroark
+Desert Curse=Slithoom,Hadjinn,Tripowoodo
+Recomposite=Peacemail
+Igloo=Lumitorto
+Static=Kotora,Raitora,Ayotoglo,Doedicrush,Bulboyant,Binburdos
+Flame Body=Slugma,Magcargo,Bomsheal,Litwick,Lampent,Chandelure,Boruketel,Binburtres,Burincod,Capefrod,Fisionchip
+Poison Point=Venipede,Whirlipede,Scolipede,Whiplace
+Effect Spore=Midust,Psudust,Drizloome
+Cute Charm=Cleffa,Clefairy,Clefable,Minccino,Cinccino,Xiphoshell,Fluffingo,Puddipup
+Gooey=Gloslug,Sacosap,Shimantle
+Tangling Hair=Till,Slurpuff
+Rough Skin=Carvanha,Sharpedo,Druddigon,Chupalibre,Hoshigaze,Kodaismos,Dragtite,Vakontite,Clefairy
+Iron Barbs=Ferroseed,Ferrothorn,Urchoxi,Needeless
+Viral=Stuxnezumi
+Aftermath=Boomboom,Boombomb,Boombanite,Hviskinne,Fisionchip
+Pickpocket=Crookyrie,Snowtyv,Frigidier
+Drizzle=Politoed,Drizloome
+Drought=Barbotite,Ithaquil,Zakurade
+Sand Stream=Tyranitar,Gigalith,Burrvalve
+Snow Warning=Shivor
+Download=Stuxnezumi
+Tangled Feet=Exegglint,Baalanci,Slepnolly
+Snow Cloak=Froslass,Saigice,Terrapoff,Icsule,Binburuno
+Sand Veil=Gligar,Gliscor,Phanpy,Donphan,Larvitar,Cacnea,Cacturne,Slithoom,Hadjinn,Cactayore,Burrvalve
+Ice Body=Snorunt,Glalie,Shivor,Thatchoof,Icsule,Rockem,Cephalpalm,Glacerpent
+Overcoat=Pineco,Forretress,Vinccino,Ravond,Crookyrie,Hviskinne,Joustorn,Gallagore,Midust,Psudust
+Magic Guard=Cleffa,Clefairy,Clefable,Wriglime,Cubizorm,Alchetrice,Ontomb,Dokei,Dyalex
+Sand Rush=Oviisaur,Weildrhide,Gorillaimo
+Swift Swim=Poliwag,Poliwhirl,Poliwrath,Mishimizu,Coppeshu,Mishiarmor,Cephalpalm,Kokunai,Hirameken,Borloch
+Chlorophyll=Tangela,Gelania,Tangrowth,Exeggcute,Exeggutor,Kernut,Stalkern,Cottonee,Whimsicott,Gloslug,Sacosap,Shimantle,Tangtrip
+Slush Rush=Albongo,Snowtyv,Frigidier,Weildrhide
+Quick Feet=Teddiursa,Ursaring,Leonte
+Prankster=Kurstraw,Cottonee,Whimsicott,Whiplace,Obakid,Obakemono,Balluna,Balonceo
+Triage=Spright,Stosai,Pineova
+Compound Eyes=Joltik,Galvantula,Arakrab,Pupole,Optoad
+Victory Star=Starmish
+Hustle=Togepi,Togetic,Togekiss,Combee,Darumaka,Boruketel,Clefairy
+Battle Armor=Gallagore,Riotgeare,Ochieetle
+Shell Armor=Kernut,Yokozira,Brekyasaur,Sweeshell,Mollusweet,Burrvalve
+Stench=Koffing,Weezing,Aromatisse
+Sturdy=Pineco,Forretress,Donphan,Magnemite,Magneton,Magnezone,Skarmory,Bonsly,Sudowoodo,Roggenrola,Boldore,Gigalith,Nosepass,Probopass
+Damp=Poliwag,Poliwhirl,Poliwrath,Politoed,Polikazan,Bomsheal,Xiphoshell
+Cloud Nine=Wispwing,Ectokite,Minneraph,Rotom
+Color Change=Kecleon,Geckgrande
+Shield Dust=Sleepillar,Cozycoon,Midust,Psudust,Popillit
+Intimidate=Growlithe,Arcanine,Scraggy,Scrafty,Keratinger,Cassowar,Glacerpent,Dragtite,Vakontite,Grubbeast
+Shadow Tag=Pangshi
+Levitate=Koffing,Weezing,Misdreavus,Mismagius,Vibrava,Flygon,Duskull,Rotom,Tynamo,Eelektrik,Eelektross,Mayflyro,Neurtilus,Kumoya,Kodowhirl,Aegistorm,Argantim
+Synchronize=Natu,Xatu
+Clear Body=Beldum,Metang,Metagross,Dreepy,Drakloak,Dragapult,Zilby,Tonsatuzi,Cilozon,Corazoul,Petigao
+Natural Cure=Staryu,Starmie,Pupnik,Laikosmo,Spright,Stosai,Pineova,Starmish
+Serene Grace=Togepi,Togetic,Togekiss,Pupnik,Laikosmo,Wispwing,Ectokite,Minneraph
+Illuminate=Staryu,Starmie,Chinchou,Lanturn,Zilby,Tonsatuzi,Bulboyant
+Inner Focus=Farfetch'd,Madame,Snorunt,Glalie,Girafarig,Darumaka,Inculamb,Incuram,Gamusnipe,Annihilape,Gorillaimo
+Magnet Pull=Magnevox,Magnemite,Magneton,Magnezone,Nosepass,Probopass
+Pressure=Dusclops,Dusknoir,Spiritomb,Vespiquen,Pollozaur,Cephalpalm,Venggal,Oarrove
+Thick Fat=Kotora,Raitora,Geckgrande
+Early Bird=Natu,Xatu,Girafarig,Sleepillar,Cozycoon
+Run Away=Scaribou,Wriglime,Dolleep,Scaypalm,Shope,Saigice,Anolite,Gwubby
+Keen Eye=Farfetch'd,Madame,Skarmory,Pupole,Optoad
+Hyper Cutter=Gligar,Gliscor,Trapinch,Pinsir,Arakrab,Praxe,Quixotic
+Pickup=Phanpy,Teddiursa,Ravond
+Forgery=Metto
+Sticky Hold=Shellos,Gastrodon,Gulpin,Swalot
+Guts=Larvitar,Heracross,Ursaring,Bomsheal,Fincer,Enguardian,Joustorn,Gallagore,Fysover,Hartowar
+Marvel Scale=Khotel,Khobisst,Chupalibre,Burincod,Capefrod
+Liquid Ooze=Gulpin,Swalot
+Rock Head=Bonsly,Sudowoodo,Cubizorm,Pelagecko,Overgrove,Kajavaro
+Arena Trap=Trapinch,Snaptrap,Tomtop
+White Smoke=Sootling,Boruketel,Fuloderma,Gorillaimo
+Pure Power=Meditite,Medicham
+Air Lock=Kumoya,Kodowhirl,Aegistorm
+Steadfast=Charriot,Inculamb,Incuram,Kokunai,Hirameken
+Gluttony=Gulpin,Swalot
+Unburden=Venggal,Swirlix,Slurpuff
+Heatproof=Lunkahrgo
+Simple=Numel,Caroot,Woobat,Swoobat
+Poison Heal=Gliscor
+Adaptability=Igualong
+Skill Link=Vinccino,Minccino,Cinccino,Tripowoodo
+Sniper=Spinarak,Ariados,Fincer,Enguardian,Gamusnipe,Tripowoodo
+No Guard=Pocozuna,Rockem
+Klutz=Gorillaimo,Fluffingo,Woobat,Swoobat
+Mold Breaker=Druddigon,Druddighul,Pinsir,Yokozira,Brekyasaur,Rockem,Nautabyss,Praxe,Draclobba
+Super Luck=Togepi,Togetic,Togekiss,Shope,Keratinger,Drawhide
+Anticipation=Ferroseed,Ferrothorn,Croagunk,Toxicroak,Xiphoshell,Dexcon
+Forewarn=Kurstraw,Pangshi,Dexcon
+Unaware=Clefable,Wispwing,Ectokite,Minneraph,Woobat,Swoobat,Pyukumuku
+Tinted Lens=Alien Ogo,Mayflyro
+Filter=Spawnge,Saturadon,Poriferex,Skalilla,Aangskal,Staalskal
+Scrappy=Scaribou,Loudred,Exploud
+Solid Rock=Camerupt,Lunkahrgo,Sootling,Barbotite,Oviisaur,Dragtite,Vakontite,Hyaligao
+Honey Gather=Combee,Teddiursa
+Frisk=Duskull,Dusclops,Dusknoir
+Unnerve=Tyranitar,Joltik,Galvantula,Vespiquen,Ursaring,Whiplace,Acolith,Arakrab,Enekidna,Hairdyo,Monstria,Popillit,Kabukin,Ochieetle,Gwubby,Grubbeast
+Defiant=Farfetch'd,Madame,Mankey,Primeape,Binburdos,Scribix,Quixotic,Ithaquil,Zakurade,Annihilape
+Defeatist=Anolite
+Friend Guard=Cleffa,Clefairy,Clairvynx,Gorillaimo
+Heavy Metal=Lunkahrgo,Riotgeare
+Light Metal=Beldum,Metang,Metagross,Chikemy,Fowlemist
+Multiscale=Glacerpent,Jiaomolóng
+Toxic Boost=Caroot,Goostrike
+Flare Boost=Monsmoke,Fumonster
+Telepathy=Meditite,Medicham,Clairvynx,Ontomb,Dokei,Dyalex
+Poison Touch=Croagunk,Toxicroak,Chikemy,Fowlemist,Alchetrice
+Regenerator=Tangela,Gelania,Tangrowth,Wriglime,Cubizorm,Tagling,Sinisign,Grafilthy,Tangtrip
+Big Pecks=Leonte,Acolith,Snowtyv,Frigidier
+Wonder Skin=Sweeshell,Mollusweet,Pupnik,Laikosmo,Jiaomolóng
+Imposter=Ditto
+Infiltrator=Cottonee,Whimsicott,Twinz,Dreepy,Drakloak,Dragapult,Spiritomb,Litwick,Lampent,Chandelure,Ravond,Crookyrie
+Moxie=Heracross,Pinsir,Scraggy,Scrafty,Gooslett,Goostrike,Praxe,Gorillaimo
+Magic Bounce=Natu,Xatu,Ontomb,Balluna,Balonceo,Gorillaimo
+Zen Mode=Darmanitan
+Aroma Veil=Stalkern,Sunflora,Spritzee,Aromatisse
+Cheek Pouch=Korechu,Sorechu,Arechu
+Protean=Kecleon,Igualong
+Fur Coat=Wolfman,Warwolf
+Magician=Barada,Nicto
+Bulletproof=Boomboom,Boombomb,Boombanite,Ayotoglo,Doedicrush
+Competitive=Binburuno
+Grass Pelt=Marmroot,Thistlepig,Punxearth,Bogrudge
+Symbiosis=Sleepillar,Cozycoon,Serenight
+Parental Bond=Till&Bill
+Backshift=Metto
+Merciless=Urchoxi,Needeless,Enekidna,Hairdyo,Monstria,Gooslett,Goostrike
+Long Reach=Borloch
+Liquid Voice=Pupole,Optoad
+Surge Surfer=Magnevox,Baskoil
+Multicell=Gunkluster
+Corrosion=Tagling,Sinisign,Grafilthy
+Fluffy=Wolfman,Warwolf,Dolleep,Baalanci,Slepnolly,Resonhare
+Dazzling=Crackliss,Mokaboom,Explobra,Fisionchip
+Alchemist=Chikemy,Fowlemist,Alchetrice
+Electric Surge=Korechu,Sorechu,Arechu
+Psychic Surge=Clairvynx,Petigao,Hyaligao
+Misty Surge=Hoshigaze,Kodaismos
+Grassy Surge=Cactayore
+Shadow Shield=Ochieetle
+Panacea=Slizón
+Plated=Scorpel,Sharpion`;
+const norm=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss').toLowerCase().replace(/[^a-z0-9]/g,'');
+const AB={},_ix={};P.forEach(p=>_ix[norm(p.name)]=p.n);
+AD.split('\n').forEach(l=>{const[a,ns]=l.split('=');ns.split(',').forEach(nm=>{const n=_ix[norm(nm)];if(n)(AB[n]=AB[n]||[]).push(a)})});
+Object.values(AB).forEach(l=>l.sort());
+const IMM={Levitate:['Gd'],'Flash Fire':['Fi'],'Water Absorb':['Wa'],'Storm Drain':['Wa'],'Dry Skin':['Wa'],'Volt Absorb':['El'],'Lightning Rod':['El'],'Motor Drive':['El'],'Sap Sipper':['Gr']};
+const HALF={'Thick Fat':['Fi','Ic'],Heatproof:['Fi'],'Water Bubble':['Fi']};
+function memMult(a,p){let r=mult(a,p.ty);const ab=abil[p.n];if(!ab||!$('fx').checked||!(AB[p.n]||[]).includes(ab))return r;
+ if((IMM[ab]||[]).includes(a))return 0;if((HALF[ab]||[]).includes(a))r*=.5;return r}
 try{const s=JSON.parse(localStorage.getItem('mmteam')||'[]');if(Array.isArray(s))s.slice(0,6).forEach((x,i)=>team[i]=P[x-1]||null)}catch(e){}
 const tb=t=>`<span class="t" style="background:${TY[t][1]}">${TY[t][0]}</span>`;
 const spr=p=>`<img class="spr" src="https://dexdb.io/assets/monomyth/sprites/${p.slug}.png" alt="" loading="lazy" onerror="this.outerHTML='<div class=ini style=background:${TY[p.ty[0]][1]}>${p.name[0]}</div>'">`;
-function save(){try{localStorage.setItem('mmteam',JSON.stringify(team.filter(Boolean).map(p=>p.n)))}catch(e){}}
+function save(){try{localStorage.setItem('mmteam',JSON.stringify(team.filter(Boolean).map(p=>p.n)));localStorage.setItem('mmab',JSON.stringify(abil))}catch(e){}}
 function render(){
  team=team.filter(Boolean).concat(team.filter(x=>!x).map(()=>null));
- $('team').innerHTML=team.map((p,i)=>p?`<div class="slot f"><button onclick="rm(${i})" title="Remove">×</button>${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div><div class="mu">BST ${p.bst}</div></div>`:`<div class="slot"><div class="mu" style="margin-top:40px">Empty</div></div>`).join('');
+ $('team').innerHTML=team.map((p,i)=>p?`<div class="slot f"><button onclick="rm(${i})" title="Remove">×</button>${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div><div class="mu">BST ${p.bst}</div><select onchange="setAb(${p.n},this.value)"><option value="">${AB[p.n]?'Ability…':'No ability data'}</option>${(AB[p.n]||[]).map(a=>`<option${abil[p.n]==a?' selected':''}>${a}</option>`).join('')}</select></div>`:`<div class="slot"><div class="mu" style="margin-top:40px">Empty</div></div>`).join('');
  const mem=team.filter(Boolean);
  let h='<tr><th>Type</th>'+mem.map(p=>`<th>${p.name}</th>`).join('')+'<th>Weak</th><th>Resist</th></tr>';
- for(const a of K){const ms=mem.map(p=>mult(a,p.ty));const w=ms.filter(x=>x>1).length,r=ms.filter(x=>x<1).length;
-  h+=`<tr><td>${tb(a)}</td>`+ms.map(x=>`<td class="m${String(x).replace('.','')}">${x==1?'':x==0?'0':x==.5?'½':x==.25?'¼':'×'+x}</td>`).join('')+`<td class="${w>r?'bad':''}">${w||''}</td><td class="${r>w?'ok':''}">${r||''}</td></tr>`}
+ for(const a of K){const ms=mem.map(p=>memMult(a,p));const w=ms.filter(x=>x>1).length,r=ms.filter(x=>x<1).length;
+  h+=`<tr><td>${tb(a)}</td>`+ms.map((x,j)=>`<td class="m${String(x).replace('.','')}${x!==mult(a,mem[j].ty)?' ab':''}">${x==1?'':x==0?'0':x==.5?'½':x==.25?'¼':'×'+x}</td>`).join('')+`<td class="${w>r?'bad':''}">${w||''}</td><td class="${r>w?'ok':''}">${r||''}</td></tr>`}
  $('def').innerHTML=mem.length?h:'<tr><td class="mu">Add Pokémon to see weaknesses and resistances.</td></tr>';
  const stab=[...new Set(mem.flatMap(p=>p.ty))];
  const hit=K.filter(d=>stab.some(a=>mult(a,[d])>1)),miss=K.filter(d=>!hit.includes(d));
@@ -434,6 +645,8 @@ function grid(){
 function add(n){const p=P[n-1];if(team.includes(p))return;const i=team.indexOf(null);if(i<0)return alert('Team is full. Remove someone first.');team[i]=p;save();render()}
 function rm(i){team[i]=null;save();render()}
 $('clr').onclick=()=>{team=[null,null,null,null,null,null];save();render()};
+function setAb(n,v){abil[n]=v;save();render()}
+$('fx').onchange=render;
 $('q').oninput=grid;$('sort').onchange=grid;
 $('chips').innerHTML=K.map(t=>`<button class="t chip" data-t="${t}" style="background:${TY[t][1]}">${TY[t][0]}</button>`).join('');
 $('chips').onclick=e=>{const t=e.target.dataset.t;if(!t)return;filt.has(t)?filt.delete(t):filt.add(t);e.target.classList.toggle('on');grid()};
