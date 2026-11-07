@@ -1671,7 +1671,7 @@ function render(){
  $('def').innerHTML=mem.length?h:'<tr><td class="mu">Add Pokémon to see weaknesses and resistances.</td></tr>';
  const off=mem.map(p=>({p,...offTypes(p)}));const stab=[...new Set(off.flatMap(o=>o.types))];
  const hit=K.filter(d=>stab.some(a=>mult(a,[d])>1)),miss=K.filter(d=>!hit.includes(d));
- $('cov').innerHTML=mem.length?`<div class="mu">Hit super-effectively (${hit.length}/18):</div><div class="cov">${hit.map(tb).join('')}</div><div class="mu" style="margin-top:8px">Not covered:</div><div class="cov">${miss.map(tb).join('')||'<span class="ok">None, full coverage!</span>'}</div><div class="mu" style="margin-top:8px">Attacking types by Pokémon (STAB assumed until you pick moves):</div>${off.map(o=>`<div class="cov" style="margin:2px 0"><b>${o.p.name}</b> ${o.types.map(tb).join('')||'<span class="mu">no damaging moves</span>'}${o.assumed?'<span class="mu">(own types)</span>':''}</div>`).join('')}`:'<div class="mu">Add Pokémon to see coverage.</div>';
+ $('cov').innerHTML=mem.length?`<div class="mu">Hit super-effectively (${hit.length}/18):</div><div class="cov">${hit.map(tb).join('')}</div><div class="mu" style="margin-top:8px">Not covered:</div><div class="cov">${miss.map(tb).join('')||'<span class="ok">None, full coverage!</span>'}</div>`:'<div class="mu">Add Pokémon to see coverage.</div>';
  grid()}
 function grid(){
  const q=$('q').value.toLowerCase(),s=$('sort').value;
