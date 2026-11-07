@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monomyth Team Planner</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--tx:#1c1c1c;--mu:#6b6b6b;--bd:#ddd;--ac:#dc1e26}
+@media(prefers-color-scheme:dark){:root{--bg:#161618;--card:#222226;--tx:#eee;--mu:#9a9a9a;--bd:#38383d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:16px}h1{margin:0 0 4px;font-size:22px}h2{font-size:16px;margin:20px 0 8px}
+.mu{color:var(--mu);font-size:12px}
+.team{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.slot{background:var(--card);border:1px dashed var(--bd);border-radius:10px;padding:8px;min-height:110px;text-align:center;position:relative}
+.slot.f{border-style:solid}.slot button{position:absolute;top:4px;right:4px;border:0;background:none;color:var(--mu);cursor:pointer;font-size:16px}
+.spr{width:64px;height:64px;image-rendering:pixelated;object-fit:contain}
+.ini{width:64px;height:64px;border-radius:50%;margin:auto;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px}
+.t{display:inline-block;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;margin:1px;text-shadow:0 1px 1px #0005}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;background:var(--card);border-radius:8px}
+th,td{padding:4px 6px;text-align:center;border-bottom:1px solid var(--bd);font-size:12px;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+.m4{background:#c0392b;color:#fff}.m2{background:#f1a9a0;color:#000}.m05{background:#a9dfbf;color:#000}.m025{background:#27ae60;color:#fff}.m0{background:#555;color:#fff}
+.bad{color:#c0392b;font-weight:700}.ok{color:#27ae60;font-weight:700}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+input,select{padding:7px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx);font:inherit}
+.chip{cursor:pointer;opacity:.4;border:0}.chip.on{opacity:1;outline:2px solid var(--tx)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:520px;overflow:auto}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:6px;text-align:center;cursor:pointer;font-size:12px}
+.c:hover{border-color:var(--ac)}.c.in{opacity:.4}
+.cov{display:flex;flex-wrap:wrap;gap:4px}
+</style></head><body><main>
+<h1>Monomyth Team Planner</h1>
+<div class="mu">Plan a team of 6 from the 361 Pokémon in the Monomyth Emerald hack. Type-based only; abilities and movepools are not factored in. Data: <a href="https://dexdb.io/monomyth/" style="color:inherit">DexDB</a>.</div>
+<h2>Your team</h2><div class="team" id="team"></div>
+<h2>Defense</h2><div class="scroll"><table id="def"></table></div>
+<h2>Offense (STAB type coverage)</h2><div id="cov"></div>
+<h2>Pick a Pokémon</h2>
+<div class="bar"><input id="q" placeholder="Search name…"><select id="sort"><option value="n">No.</option><option value="a">Name</option><option value="b">BST</option></select><button id="clr" style="padding:7px 10px">Clear team</button></div>
+<div class="bar" id="chips"></div><div class="mu" id="cnt"></div>
+<div class="grid" id="grid"></div>
+<p class="mu">Sprites load from dexdb.io. Monomyth is a fan game by Team Monomyth; this is an unofficial fan tool. Spoilers: the Pokédex reveals the hack's new Pokémon.</p>
+</main>
+<script>
+const RAW=`Marmroot Gr 320
+Thistlepig GrGd 410
+Punxearth GrGd 530
+Crackliss FiPo 320
+Mokaboom FiPo 410
+Explobra FiPo 530
+Mishimizu Wa 320
+Coppeshu WaSt 410
+Mishiarmor WaSt 530
+Shope No 310
+Keratinger No 496
+Kernut Gr 180
+Stalkern GrPs 350
+Sunflora GrPs 515
+Leonte FlGd 320
+Acolith FlGd 465
+Spinarak BuPo 250
+Ariados BuPo 440
+Joltik BuEl 319
+Galvantula BuEl 472
+Combee BuFl 244
+Vespiquen BuFl 500
+Caroot Gr 255
+Whiplace GrPo 465
+Sleepillar BuPs 215
+Cozycoon BuPs 285
+Serenight BuPs 425
+Ravond DaFl 328
+Crookyrie DaFl 468
+Minccino No 300
+Cinccino No 470
+Vinccino NoGd 470
+Venipede PoBu 260
+Whirlipede PoBu 360
+Scolipede PoBu 485
+Poliwag Wa 300
+Poliwhirl Wa 385
+Poliwrath WaFg 510
+Politoed Wa 500
+Polikazan WaGd 510
+Slugma Fi 250
+Magcargo FiRo 430
+Lunkahrgo StRo 530
+Tagling PoDa 280
+Sinisign PoDa 405
+Grafilthy PoDa 510
+Whismur No 240
+Loudred No 360
+Exploud No 490
+Scraggy DaFg 348
+Scrafty DaFg 488
+Litwick FiGh 275
+Lampent FiGh 370
+Chandelure FiGh 520
+Cottonee GrFa 280
+Whimsicott GrFa 480
+Spritzee Fa 341
+Aromatisse Fa 462
+Mankey Fg 305
+Primeape Fg 455
+Annihilape FgGh 535
+Pineco Bu 290
+Forretress BuSt 465
+Kotora El 340
+Raitora El 500
+Dolleep Ps 320
+Baalanci Ps 420
+Slepnolly Ps 510
+Gulpin Po 302
+Swalot Po 467
+Swirlix Fa 341
+Slurpuff Fa 480
+Ayotoglo ElGd 357
+Doedicrush ElGd 512
+Bonsly Ro 290
+Sudowoodo Ro 410
+Tripowoodo RoGd 535
+Puddipup Fi 315
+Growlithe Fi 350
+Arcanine Fi 555
+Boomboom FiSt 330
+Boombomb FiSt 460
+Boombanite FiSt 535
+Dexcon Gh 422
+Anolite No 190
+Geckgrande No 345
+Igualong NoDr 560
+Exeggcute GrPs 325
+Exeggutor GrPs 530
+Exegglint GrEl 530
+Sweeshell BuFa 315
+Mollusweet BuFa 470
+Pelagecko RoGr 350
+Overgrove RoGr 534
+Bellarva BuWa 320
+Hydroskito BuWa 460
+Kokunai Wa 280
+Hirameken Wa 505
+Drizloome WaPo 448
+Fluffingo NoFl 300
+Cassowar FgFl 482
+Gooslett DaNo 300
+Goostrike DaNo 490
+Togepi Fa 245
+Togetic FaFl 405
+Togekiss FaFl 545
+Slithoom Gd 315
+Hadjinn Gd 510
+Cacnea Gr 335
+Cacturne GrDa 515
+Cactayore GrDa 555
+Trapinch Gd 290
+Vibrava GdDr 340
+Flygon GdDr 520
+Scaypalm BuFi 320
+Mayflyro BuFi 480
+Gligar GdFl 430
+Gliscor GdFl 510
+Scorpel Bu 345
+Sharpion BuDa 450
+Natu PsFl 320
+Xatu PsFl 470
+Pupnik Fa 340
+Laikosmo Fa 500
+Meditite PsFg 280
+Medicham PsFg 410
+Phanpy Gd 330
+Donphan Gd 500
+Clairvynx PsFa 477
+Roggenrola Ro 280
+Boldore Ro 390
+Gigalith Ro 515
+Woobat PsFl 323
+Swoobat PsFl 465
+Barada DaPs 315
+Nicto DaPs 470
+Hoshigaze RoFa 399
+Kodaismos RoFa 539
+Cleffa Fa 218
+Clefairy Fa 323
+Clefable Fa 483
+Nosepass Ro 375
+Probopass RoSt 525
+Slizón RoGh 405
+Pogonuva FiDr 316
+Uvbeard FiDr 510
+Ontomb GdPs 470
+Khotel NoBu 340
+Khobisst NoBu 510
+Numel FiGd 305
+Camerupt FiGd 500
+Petigao Ro 415
+Hyaligao RoPs 540
+Chupalibre Da 471
+Tomtop GdFa 350
+Upbrute GdFa 535
+Burrvalve GdPo 448
+Pupole WaPs 325
+Optoad WaPs 485
+Shellos Wa 325
+Gastrodon WaGd 475
+Twinz GhDa 450
+Girafarig NoDa 461
+Tynamo El 275
+Eelektrik El 405
+Eelektross El 515
+Xiphoshell WaFg 500
+Magnemite ElSt 325
+Magneton ElSt 465
+Magnezone ElSt 535
+Magnevox ElSt 535
+Balluna FgFa 325
+Balonceo FgFa 520
+Obakid Gh 315
+Obakemono Gh 520
+Duskull Gh 295
+Dusclops Gh 455
+Dusknoir Gh 525
+Scribix PsBu 300
+Quixotic PsBu 480
+Icsule Ic 240
+Rockem IcRo 495
+Cephalpalm IcDa 495
+Glacerpent IcDr 495
+Farfetch’d NoFl 377
+Madame NoFl 475
+Ditto No 288
+Metto St 462
+Rotom ElGh 440
+Cilozon GhFa 310
+Corazoul GhFa 510
+Fincer WaSt 335
+Enguardian WaSt 505
+Carvanha WaDa 305
+Sharpedo WaDa 500
+Staryu Wa 340
+Starmie WaPs 520
+Starmish PsFi 535
+Bomsheal FiWa 490
+Zilby El 330
+Tonsatuzi El 463
+Chinchou WaEl 330
+Lanturn WaEl 460
+Spawnge Wa 225
+Saturadon Wa 370
+Poriferex WaDr 520
+Gloslug WaGr 300
+Sacosap WaGr 400
+Shimantle WaGr 525
+Pyukumuku Wa 410
+Charriot Fg 375
+Riotgeare FgSt 500
+Wriglime GdBu 350
+Cubizorm GdRo 495
+Volet El 350
+Jolet El 482
+Snaptrap GrDr 500
+Croagunk FgPo 300
+Toxicroak FgPo 490
+Popillit BuGh 300
+Kabukin BuGh 420
+Ochieetle BuGh 537
+Tangtrip Gr 305
+Tangela Gr 435
+Gelania Gr 535
+Tangrowth Gr 535
+Kecleon No 440
+Heracross BuFg 500
+Till Gr 295
+Till&Bill GrFl 436
+Gunkluster Po 175
+Bogrudge GdGr 540
+Burincod FiFl 340
+Capefrod FiFl 524
+Fisionchip FiGh 524
+Yokozira Dr 300
+Brekyasaur Dr 505
+Koffing Po 340
+Weezing Po 490
+Monsmoke Po 330
+Fumonster Po 461
+Fuloderma PoFi 555
+Boruketel Fi 500
+Ithaquil FiFg 369
+Zakurade FiFg 519
+Darumaka Fi 315
+Darmanitan Fi 480
+Ferroseed StGr 305
+Ferrothorn StGr 489
+Urchoxi StPo 305
+Needeless StPo 489
+Dragtite RoDr 400
+Vakontite RoDr 545
+Enekidna PoDr 316
+Hairdyo PoDr 411
+Monstria PoDr 538
+Sootling FiRo 380
+Barbotite FiRo 510
+Stuxnezumi DaEl 510
+Hviskinne NoGh 476
+Oviisaur Ro 500
+Pollozaur RoDr 515
+Wolfman Ic 365
+Warwolf Ic 495
+Snorunt Ic 300
+Glalie Ic 480
+Froslass IcGh 480
+Terrapoff Ic 350
+Lumitorto Ic 500
+Saigice IcNo 345
+Albongo IcNo 505
+Scaribou NoSt 470
+Resonhare IcSt 516
+Inculamb Fg 350
+Incuram Fg 482
+Teddiursa No 330
+Ursaring No 500
+Zorua Da 330
+Zoroark Da 510
+Draclobba DrFg 475
+Pinsir Bu 500
+Praxe BuSt 530
+Arakrab Bu 500
+Kurstraw Gh 298
+Pangshi Gh 457
+Midust BuGd 345
+Psudust BuGd 510
+Misdreavus Gh 435
+Mismagius Gh 495
+Joustorn St 350
+Gallagore St 535
+Fysover GhFg 377
+Hartowar GhFg 534
+Chikemy StFl 318
+Fowlemist StFl 412
+Alchetrice StDr 565
+Peacemail StGh 515
+Shivor Ic 490
+Alien Ogo PsSt 490
+Snowtyv IcFg 379
+Frigidier IcFg 536
+Thatchoof IcGd 518
+Spiritomb GhDa 485
+Bulboyant IcEl 356
+Baskoil IcEl 555
+Pocozuna ElFg 540
+Spright Ro 342
+Stosai RoPs 441
+Pineova RoPs 525
+Dokei Fa 360
+Dyalex FaPs 500
+Gamusnipe NoFl 491
+Druddigon Dr 485
+Druddighul DrGh 520
+Skarmory StFl 465
+Neurtilus ElRo 508
+Elemink No 507
+Wispwing GhFl 275
+Ectokite GhFl 440
+Minneraph GhFl 540
+Larvitar RoGd 300
+Pupitar RoGd 410
+Tyranitar RoDa 600
+Beldum StPs 300
+Metang StPs 420
+Metagross StPs 600
+Dreepy GhDr 270
+Drakloak GhDr 410
+Dragapult GhDr 600
+Kumoya Fa 300
+Kodowhirl FaEl 420
+Aegistorm FaEl 600
+Borloch WaGh 531
+Drawhide DaFa 529
+Venggal GhDa 510
+Oarrove DaWa 530
+Gwubby Bu 284
+Grubbeast BuDa 511
+Tusvind Gr 320
+Rollatul Gr 410
+Blomkappe Gr 530
+Süßchen Fi 320
+Zangdreiß Fi 410
+Reifgeißer Fi 530
+Skalilla Wa 320
+Aangskal Wa 410
+Staalskal WaSt 530
+Korechu El 320
+Sorechu El 485
+Arechu El 555
+Jiaomolóng Dr 570
+Asset KCLN NoSt 570
+Gorillaimo No 570
+Kajavaro Ro 580
+Nautabyss WaDr 580
+Argantim ElPs 580
+Binburuno BuIc 580
+Binburdos BuEl 580
+Binburtres BuFi 580
+Weildrhide Ic 680
+Intrecury FlEl 600`;
+const TY={No:['Normal','#a8a77a'],Fi:['Fire','#ee8130'],Wa:['Water','#6390f0'],El:['Electric','#d4a90f'],Gr:['Grass','#4caf3a'],Ic:['Ice','#4cc4c4'],Fg:['Fighting','#c22e28'],Po:['Poison','#a33ea1'],Gd:['Ground','#c9a23c'],Fl:['Flying','#8e6fd8'],Ps:['Psychic','#f95587'],Bu:['Bug','#8fa012'],Ro:['Rock','#a6902c'],Gh:['Ghost','#735797'],Dr:['Dragon','#6f35fc'],Da:['Dark','#705746'],St:['Steel','#8a8aa8'],Fa:['Fairy','#d685ad']};
+const K=Object.keys(TY);
+// attacker: super-effective / not very / no effect
+const CH={No:'/RoSt/Gh',Fi:'GrIcBuSt/FiWaRoDr/',Wa:'FiGdRo/WaGrDr/',El:'WaFl/ElGrDr/Gd',Gr:'WaGdRo/FiGrPoFlBuDrSt/',Ic:'GrGdFlDr/FiWaIcSt/',Fg:'NoIcRoDaSt/PoFlPsBuFa/Gh',Po:'GrFa/PoGdRoGh/St',Gd:'FiElPoRoSt/GrBu/Fl',Fl:'GrFgBu/ElRoSt/',Ps:'FgPo/PsSt/Da',Bu:'GrPsDa/FiFgPoFlGhStFa/',Ro:'FiIcFlBu/FgGdSt/',Gh:'PsGh/Da/No',Dr:'Dr/St/Fa',Da:'PsGh/FgDaFa/',St:'IcRoFa/FiWaElSt/',Fa:'FgDrDa/FiPoSt/'};
+const P=RAW.split('\n').map((l,i)=>{const m=l.match(/^(.*) (\w+) (\d+)$/);return{n:i+1,name:m[1],ty:m[2].match(/../g),bst:+m[3],
+ slug:m[1].normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss').replace(/’/g,'').replace(/&/g,'-').replace(/ /g,'-').toLowerCase()}});
+function mult(a,d){const[s,v,z]=CH[a].split('/').map(x=>x?x.match(/../g):[]);let r=1;for(const t of d){if(z.includes(t))r=0;else if(s.includes(t))r*=2;else if(v.includes(t))r*=.5}return r}
+const $=id=>document.getElementById(id);
+let team=[null,null,null,null,null,null],filt=new Set();
+try{const s=JSON.parse(localStorage.getItem('mmteam')||'[]');if(Array.isArray(s))s.slice(0,6).forEach((x,i)=>team[i]=P[x-1]||null)}catch(e){}
+const tb=t=>`<span class="t" style="background:${TY[t][1]}">${TY[t][0]}</span>`;
+const spr=p=>`<img class="spr" src="https://dexdb.io/assets/monomyth/sprites/${p.slug}.png" alt="" loading="lazy" onerror="this.outerHTML='<div class=ini style=background:${TY[p.ty[0]][1]}>${p.name[0]}</div>'">`;
+function save(){try{localStorage.setItem('mmteam',JSON.stringify(team.filter(Boolean).map(p=>p.n)))}catch(e){}}
+function render(){
+ team=team.filter(Boolean).concat(team.filter(x=>!x).map(()=>null));
+ $('team').innerHTML=team.map((p,i)=>p?`<div class="slot f"><button onclick="rm(${i})" title="Remove">×</button>${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div><div class="mu">BST ${p.bst}</div></div>`:`<div class="slot"><div class="mu" style="margin-top:40px">Empty</div></div>`).join('');
+ const mem=team.filter(Boolean);
+ let h='<tr><th>Type</th>'+mem.map(p=>`<th>${p.name}</th>`).join('')+'<th>Weak</th><th>Resist</th></tr>';
+ for(const a of K){const ms=mem.map(p=>mult(a,p.ty));const w=ms.filter(x=>x>1).length,r=ms.filter(x=>x<1).length;
+  h+=`<tr><td>${tb(a)}</td>`+ms.map(x=>`<td class="m${String(x).replace('.','')}">${x==1?'':x==0?'0':x==.5?'½':x==.25?'¼':'×'+x}</td>`).join('')+`<td class="${w>r?'bad':''}">${w||''}</td><td class="${r>w?'ok':''}">${r||''}</td></tr>`}
+ $('def').innerHTML=mem.length?h:'<tr><td class="mu">Add Pokémon to see weaknesses and resistances.</td></tr>';
+ const stab=[...new Set(mem.flatMap(p=>p.ty))];
+ const hit=K.filter(d=>stab.some(a=>mult(a,[d])>1)),miss=K.filter(d=>!hit.includes(d));
+ $('cov').innerHTML=mem.length?`<div class="mu">Hit super-effectively (${hit.length}/18):</div><div class="cov">${hit.map(tb).join('')}</div><div class="mu" style="margin-top:8px">Not covered:</div><div class="cov">${miss.map(tb).join('')||'<span class="ok">None, full coverage!</span>'}</div>`:'<div class="mu">Add Pokémon to see coverage.</div>';
+ grid()}
+function grid(){
+ const q=$('q').value.toLowerCase(),s=$('sort').value;
+ let l=P.filter(p=>(!q||p.name.toLowerCase().includes(q))&&[...filt].every(t=>p.ty.includes(t)));
+ if(s=='a')l.sort((a,b)=>a.name.localeCompare(b.name));if(s=='b')l.sort((a,b)=>b.bst-a.bst);
+ $('cnt').textContent=l.length+' Pokémon';
+ $('grid').innerHTML=l.map(p=>`<div class="c ${team.includes(p)?'in':''}" onclick="add(${p.n})">${spr(p)}<div><b>${p.name}</b></div><div>${p.ty.map(tb).join('')}</div></div>`).join('')}
+function add(n){const p=P[n-1];if(team.includes(p))return;const i=team.indexOf(null);if(i<0)return alert('Team is full. Remove someone first.');team[i]=p;save();render()}
+function rm(i){team[i]=null;save();render()}
+$('clr').onclick=()=>{team=[null,null,null,null,null,null];save();render()};
+$('q').oninput=grid;$('sort').onchange=grid;
+$('chips').innerHTML=K.map(t=>`<button class="t chip" data-t="${t}" style="background:${TY[t][1]}">${TY[t][0]}</button>`).join('');
+$('chips').onclick=e=>{const t=e.target.dataset.t;if(!t)return;filt.has(t)?filt.delete(t):filt.add(t);e.target.classList.toggle('on');grid()};
+render();
+</script></body></html>
